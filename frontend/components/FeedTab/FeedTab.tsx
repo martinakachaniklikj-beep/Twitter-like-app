@@ -7,34 +7,53 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { MessageSquare, Heart, Repeat2, Image as ImageIcon, X } from 'lucide-react';
 import {
+  CommentAuthor,
+  CommentContent,
+  CommentDate,
+  CommentHeader,
+  CommentInputContainer,
+  CommentItem,
+  CommentsSection,
+  CommentsSectionTitle,
+  CommentUsername,
   Container,
-  FeedContainer,
   CreatePostCard,
   CreatePostForm,
-  PostTextarea,
-  PostButtonContainer,
-  PostButton,
+  EmptyCard,
+  EmptySubtext,
+  EmptyText,
+  FeedContainer,
   FeedSection,
   FeedTitle,
   LoadingCard,
   LoadingText,
-  EmptyCard,
-  EmptyText,
-  EmptySubtext,
-  PostCard,
-  PostContent,
+  ModalCloseButton,
+  ModalContent,
+  ModalHeader,
+  ModalOverlay,
+  ModalTitle,
+  OriginalPostAuthor,
+  OriginalPostCard,
+  OriginalPostContent,
+  OriginalPostHeader,
+  OriginalPostUsername,
+  PostActionButton,
+  PostActionCount,
+  PostActions,
+  PostAuthorName,
+  PostAuthorUsername,
   PostAvatar,
   PostAvatarText,
   PostBody,
-  PostHeader,
-  PostAuthorName,
-  PostAuthorUsername,
-  PostDivider,
+  PostButton,
+  PostButtonContainer,
+  PostCard,
+  PostContent,
   PostDate,
+  PostDivider,
+  PostHeader,
   PostText,
-  PostActions,
-  PostActionButton,
-  PostActionCount,
+  PostTextarea,
 } from './FeedTab.styles';
 import { Post, Comment, CreatePostForm as CreatePostFormType } from './types';
 import { feedLabels } from './utils/labels';
@@ -404,123 +423,59 @@ export default function FeedTab() {
       </FeedContainer>
 
       {commentModalPost && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-          onClick={() => setCommentModalPost(null)}
-        >
-          <div
-            style={{
-              backgroundColor: 'var(--card-background, white)',
-              borderRadius: '16px',
-              padding: '24px',
-              maxWidth: '500px',
-              width: '90%',
-              maxHeight: '80vh',
-              overflow: 'auto',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                marginBottom: '16px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>
+        <ModalOverlay onClick={() => setCommentModalPost(null)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <ModalTitle>
                 {feedLabels.replyTo} @{commentModalPost.authorUsername}
-              </h3>
-              <button
-                onClick={() => setCommentModalPost(null)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                }}
-              >
+              </ModalTitle>
+              <ModalCloseButton onClick={() => setCommentModalPost(null)}>
                 <X size={24} />
-              </button>
-            </div>
-            <div
-              style={{
-                marginBottom: '16px',
-                padding: '16px',
-                backgroundColor: 'var(--hover-color, #f7f7f7)',
-                borderRadius: '8px',
-              }}
-            >
-              <div style={{ fontSize: '14px', marginBottom: '8px' }}>
-                <strong>
+              </ModalCloseButton>
+            </ModalHeader>
+
+            <OriginalPostCard>
+              <OriginalPostHeader>
+                <OriginalPostAuthor>
                   {commentModalPost.authorDisplayName || commentModalPost.authorUsername}
-                </strong>
-                <span style={{ color: '#536471', marginLeft: '4px' }}>
+                </OriginalPostAuthor>
+                <OriginalPostUsername>
                   @{commentModalPost.authorUsername}
-                </span>
-              </div>
-              <div>{commentModalPost.content}</div>
-            </div>
+                </OriginalPostUsername>
+              </OriginalPostHeader>
+              <OriginalPostContent>{commentModalPost.content}</OriginalPostContent>
+            </OriginalPostCard>
 
             {comments.length > 0 && (
-              <div style={{ marginBottom: '16px', maxHeight: '200px', overflowY: 'auto' }}>
-                <h4 style={{ fontSize: '16px', marginBottom: '12px', fontWeight: '600' }}>
+              <CommentsSection>
+                <CommentsSectionTitle>
                   {feedLabels.comments} ({comments.length})
-                </h4>
+                </CommentsSectionTitle>
                 {comments.map((comment: Comment) => (
-                  <div
-                    key={comment.id}
-                    style={{
-                      padding: '12px',
-                      marginBottom: '8px',
-                      backgroundColor: 'var(--hover-color, #f7f7f7)',
-                      borderRadius: '8px',
-                    }}
-                  >
-                    <div style={{ fontSize: '14px', marginBottom: '4px' }}>
-                      <strong>{comment.user.displayName || comment.user.username}</strong>
-                      <span style={{ color: '#536471', marginLeft: '4px' }}>
-                        @{comment.user.username}
-                      </span>
-                      <span style={{ color: '#536471', marginLeft: '8px', fontSize: '12px' }}>
-                        {formatDate(comment.createdAt)}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '14px' }}>{comment.content}</div>
-                  </div>
+                  <CommentItem key={comment.id}>
+                    <CommentHeader>
+                      <CommentAuthor>
+                        {comment.user.displayName || comment.user.username}
+                      </CommentAuthor>
+                      <CommentUsername>@{comment.user.username}</CommentUsername>
+                      <CommentDate>{formatDate(comment.createdAt)}</CommentDate>
+                    </CommentHeader>
+                    <CommentContent>{comment.content}</CommentContent>
+                  </CommentItem>
                 ))}
-              </div>
+              </CommentsSection>
             )}
 
-            <textarea
+            <PostTextarea
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               placeholder={feedLabels.writeReply}
               style={{
-                width: '100%',
                 minHeight: '100px',
-                padding: '12px',
-                borderRadius: '8px',
-                border: '1px solid #ccc',
-                fontSize: '16px',
                 resize: 'vertical',
-                fontFamily: 'inherit',
               }}
             />
-            <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+            <CommentInputContainer>
               <PostButton
                 onClick={() =>
                   commentMutation.mutate({ postId: commentModalPost.id, content: commentText })
@@ -530,9 +485,9 @@ export default function FeedTab() {
               >
                 {commentMutation.isPending ? feedLabels.replying : feedLabels.reply}
               </PostButton>
-            </div>
-          </div>
-        </div>
+            </CommentInputContainer>
+          </ModalContent>
+        </ModalOverlay>
       )}
     </Container>
   );
