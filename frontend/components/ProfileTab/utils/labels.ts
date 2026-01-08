@@ -1,0 +1,17 @@
+export const profileLabels = {
+  editProfile: 'Edit Profile',
+  save: 'Save',
+  cancel: 'Cancel',
+  displayName: 'Display Name',
+  bio: 'Bio',
+  joinedDate: 'Joined',
+  posts: 'Posts',
+  followers: 'Followers',
+  following: 'Following',
+  likes: 'likes',
+  replies: 'replies',
+  noPosts: 'No posts yet',
+  startPosting: 'Start posting to see your tweets here',
+  loadingProfile: 'Loading profile...',
+  loadingPosts: 'Loading posts...',
+};
