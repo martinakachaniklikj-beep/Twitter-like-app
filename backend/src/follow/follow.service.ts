@@ -1,65 +1,60 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Follow } from './follow.entity';
-import { User } from '../users/user.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class FollowService {
-  constructor(
-    @InjectRepository(Follow)
-    private readonly followRepo: Repository<Follow>,
-
-    @InjectRepository(User)
-    private readonly userRepo: Repository<User>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async follow(followerId: string, followingId: string) {
     if (followerId === followingId) {
       throw new BadRequestException('You cannot follow yourself');
     }
 
-    const existing = await this.followRepo.findOne({
+    const existing = await this.prisma.follow.findUnique({
       where: {
-        follower: { id: followerId },
-        following: { id: followingId },
+        followerId_followingId: { followerId, followingId },
       },
     });
 
     if (existing) {
-      return { followed: false }; // ✅ important
+      return { followed: false };
     }
 
-    const follow = this.followRepo.create({
-      follower: { id: followerId } as User,
-      following: { id: followingId } as User,
+    await this.prisma.follow.create({
+      data: {
+        follower: { connect: { id: followerId } },
+        following: { connect: { id: followingId } },
+      },
     });
 
-    await this.followRepo.save(follow);
-
-    return { followed: true }; // ✅ always return JSON
+    return { followed: true };
   }
 
   async unfollow(followerId: string, followingId: string) {
-    await this.followRepo.delete({
-      follower: { id: followerId },
-      following: { id: followingId },
-    });
+    await this.prisma.follow
+      .delete({
+        where: {
+          followerId_followingId: { followerId, followingId },
+        },
+      })
+      .catch(() => null);
 
-    return { unfollowed: true }; // ✅ return JSON
+    return { unfollowed: true };
   }
 
-  async getFollowers(userId: string): Promise<Follow[]> {
-    return this.followRepo.find({
-      where: { following: { id: userId } },
-      relations: ['follower'],
+  async getFollowers(userId: string) {
+    return this.prisma.follow.findMany({
+      where: { followingId: userId },
+      include: { follower: true },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
-  async getFollowing(userId: string): Promise<Follow[]> {
-    return this.followRepo.find({
-      where: { follower: { id: userId } },
-      relations: ['following'],
+  async getFollowing(userId: string) {
+    return this.prisma.follow.findMany({
+      where: { followerId: userId },
+      include: { following: true },
+      orderBy: { createdAt: 'desc' },
     });
   }
 }

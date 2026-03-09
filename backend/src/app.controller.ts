@@ -1,7 +1,11 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { AppService } from './app.service';
-import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
-import { CurrentUser } from './auth/decorators/current-user.decorator';
+import { FirebaseAuthGuard } from './firebase/firebase-auth.guard';
+
+interface AuthRequest extends Request {
+  user: { uid: string; email?: string };
+}
 
 @Controller()
 export class AppController {
@@ -12,12 +16,12 @@ export class AppController {
     return this.appService.getHello();
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(FirebaseAuthGuard)
   @Get('profile')
-  getProfile(@CurrentUser() user: any) {
+  getProfile(@Req() req: AuthRequest) {
     return {
       message: 'This is a protected route',
-      user,
+      user: req.user,
     };
   }
 }

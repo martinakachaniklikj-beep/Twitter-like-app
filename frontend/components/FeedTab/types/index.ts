@@ -2,6 +2,7 @@ export interface Post {
   id: string;
   content: string;
   imageUrl?: string;
+  gifUrl?: string;
   authorId: string;
   authorUsername: string;
   authorDisplayName?: string;
@@ -19,6 +20,7 @@ export interface Post {
   originalAuthorUsername?: string;
   originalPostContent?: string;
   originalPostImageUrl?: string;
+  originalPostGifUrl?: string;
 }
 
 export interface Comment {
@@ -37,4 +39,5 @@ export interface CreatePostForm {
   isReposted?: boolean;
   content: string;
   imageUrl?: string;
+  gifUrl?: string;
 }

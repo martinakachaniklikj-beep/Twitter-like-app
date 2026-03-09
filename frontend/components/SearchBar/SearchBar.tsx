@@ -23,13 +23,17 @@ import { SearchResult } from './types';
 import { searchLabels } from './utils/labels';
 import { searchServices } from './services/searchServices';
 
-export default function SearchBar() {
+interface SearchBarProps {
+  onUserSelect?: (user: SearchResult) => void;
+}
+
+export default function SearchBar({ onUserSelect }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const { token } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -53,8 +57,12 @@ export default function SearchBar() {
 
   const { data: results = [] } = useQuery<SearchResult[]>({
     queryKey: ['searchUsers', debouncedQuery],
-    queryFn: () => searchServices.searchUsers(token!, debouncedQuery),
-    enabled: debouncedQuery.trim().length >= 2 && !!token,
+    queryFn: async () => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+      return searchServices.searchUsers(token, debouncedQuery);
+    },
+    enabled: debouncedQuery.trim().length >= 2,
   });
 
   useEffect(() => {
@@ -63,10 +71,16 @@ export default function SearchBar() {
     }
   }, [results, debouncedQuery]);
 
-  const handleUserClick = (username: string) => {
+  const handleUserClick = (user: SearchResult) => {
     setQuery('');
     setIsOpen(false);
-    router.push(`/profile/${username}`);
+
+    if (onUserSelect) {
+      onUserSelect(user);
+      return;
+    }
+
+    router.push(`/profile/${user.username}`);
   };
 
   return (
@@ -90,7 +104,7 @@ export default function SearchBar() {
             <EmptyResults>{searchLabels.noResults}</EmptyResults>
           ) : (
             results.map((user) => (
-              <ResultItem key={user.id} onClick={() => handleUserClick(user.username)}>
+              <ResultItem key={user.id} onClick={() => handleUserClick(user)}>
                 <Avatar>
                   <AvatarText>{user.username[0].toUpperCase()}</AvatarText>
                 </Avatar>

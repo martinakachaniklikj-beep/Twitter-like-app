@@ -1,33 +1,33 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Comment } from './comment.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class CommentService {
-  constructor(
-    @InjectRepository(Comment)
-    private commentRepository: Repository<Comment>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(
     userId: string,
     postId: string,
     content: string,
-  ): Promise<Comment> {
-    const comment = this.commentRepository.create({
-      content,
-      user: { id: userId },
-      post: { id: postId },
+  ) {
+    return this.prisma.comment.create({
+      data: {
+        content,
+        user: { connect: { id: userId } },
+        post: { connect: { id: postId } },
+      },
+      include: {
+        user: true,
+      },
     });
-    return this.commentRepository.save(comment);
   }
 
-  async findByPost(postId: string): Promise<Comment[]> {
-    return this.commentRepository.find({
-      where: { post: { id: postId } },
-      relations: ['user'],
-      order: { createdAt: 'DESC' },
+  async findByPost(postId: string) {
+    return this.prisma.comment.findMany({
+      where: { postId },
+      include: { user: true },
+      orderBy: { createdAt: 'desc' },
     });
   }
 }
+

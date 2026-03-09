@@ -2,6 +2,7 @@
 
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ChatSocketProvider } from "@/contexts/ChatSocketContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -11,7 +12,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ChatSocketProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </ChatSocketProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

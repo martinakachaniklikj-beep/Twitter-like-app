@@ -1,22 +1,28 @@
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export const feedServices = {
-  async fetchFeed(token: string, page: number = 1, limit: number = 10) {
-    const response = await fetch(`${apiUrl}/posts/feed?page=${page}&limit=${limit}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  async fetchFeed(
+    token: string,
+    page: number = 1,
+    limit: number = 10,
+    type: 'for_you' | 'following' = 'for_you',
+  ) {
+    const response = await fetch(
+      `${apiUrl}/posts/feed?page=${page}&limit=${limit}&type=${type}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
     if (!response.ok) throw new Error('Failed to load feed');
     return response.json();
   },
 
-  async createPost(token: string, content: string, imageUrl?: string) {
+  async createPost(token: string, content: string, imageUrl?: string, gifUrl?: string) {
     const response = await fetch(`${apiUrl}/posts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ content, imageUrl }),
+      body: JSON.stringify({ content, imageUrl, gifUrl }),
     });
     if (!response.ok) throw new Error('Failed to create post');
     return response.json();
@@ -61,14 +67,20 @@ export const feedServices = {
     return response.json();
   },
 
-  async repostPost(token: string, postId: string, content?: string, imageUrl?: string) {
+  async repostPost(
+    token: string,
+    postId: string,
+    content?: string,
+    imageUrl?: string,
+    gifUrl?: string,
+  ) {
     const response = await fetch(`${apiUrl}/posts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ originalPostId: postId, content, imageUrl }),
+      body: JSON.stringify({ originalPostId: postId, content, imageUrl, gifUrl }),
     });
     if (!response.ok) throw new Error('Failed to repost');
     return response.json();

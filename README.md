@@ -1,10 +1,10 @@
 # Twitter Clone Application
 
-A modern Twitter-like social media application built with Next.js and NestJS, featuring real-time interactions, user authentication, and a responsive design with dark mode support.
+A modern Twitter-like social media application built with Next.js and NestJS, featuring real-time chat, user authentication with Firebase, and a responsive design with dark mode support.
 
 ## Features
 
-- **User Authentication**: Secure registration and login with JWT-based authentication
+- **User Authentication**: Secure registration and login with **Firebase Authentication** (token-based)
 - **Post Creation**: Create posts with text and images (supports base64 image uploads)
 - **Social Interactions**:
   - Like and unlike posts
@@ -17,6 +17,11 @@ A modern Twitter-like social media application built with Next.js and NestJS, fe
 - **Feed System**:
   - Personalized feed showing posts from followed users
   - Pagination support for efficient loading
+- **Real-time Chat**:
+  - Direct conversations between users
+  - WebSocket-based messaging (Socket.IO)
+  - Conversation list and message history
+- **AI Suggestions**: Optional AI-powered post suggestions (Google Gemini)
 - **Search**: Search for users by username or email
 - **Theme Support**: Light and dark mode toggle
 
@@ -25,11 +30,12 @@ A modern Twitter-like social media application built with Next.js and NestJS, fe
 ### Backend
 
 - **NestJS** - Progressive Node.js framework
-- **TypeORM** - ORM for database management
+- **Prisma** - ORM for database management
 - **PostgreSQL** - Relational database
-- **JWT** - JSON Web Tokens for authentication
-- **Passport** - Authentication middleware
-- **bcrypt** - Password hashing
+- **Firebase Admin** - Token verification and authentication
+- **Socket.IO** - Real-time WebSocket communication for chat
+- **Google Generative AI (Gemini)** - Optional AI post suggestions
+- **Docker** - Containerization (Dockerfile + docker-compose)
 
 ### Frontend
 
@@ -40,6 +46,7 @@ A modern Twitter-like social media application built with Next.js and NestJS, fe
 - **Tailwind CSS** - Utility-first CSS framework
 - **Lucide React** - Icon library
 - **React Hook Form** - Form management
+- **Firebase Client SDK** - Sign-in and token management
 
 ## Prerequisites
 
@@ -71,29 +78,33 @@ Create a `.env` file in the `backend` directory:
 PORT=3001
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
 
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=postgres
-DB_NAME=db_namme
+# Database (Prisma)
+DATABASE_URL=postgresql://user:password@localhost:5432/twitter
 
-# JWT Configuration
+# JWT (optional, for legacy or internal use)
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
 JWT_EXPIRATION=7d
+
+# Firebase Admin (for token verification)
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=...
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+
+# Optional: AI post suggestions
+GEMINI_API_KEY=your-gemini-api-key
 ```
 
-**Important**: Change `JWT_SECRET` to a secure random string in production.
+**Important**: Use a secure `JWT_SECRET` and valid Firebase credentials in production.
 
 ### 3. Database Setup
 
-Create a PostgreSQL database:
+Create a PostgreSQL database, then run Prisma migrations from the `backend` directory:
 
-```sql
-CREATE DATABASE twitter;
+```bash
+cd backend
+npx prisma migrate deploy
+npx prisma generate
 ```
-
-The application will automatically create the required tables on first run using TypeORM migrations.
 
 ### 4. Frontend Setup
 
@@ -107,6 +118,9 @@ Create a `.env.local` file in the `frontend` directory:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3000/api
 BACKEND_URL=http://localhost:3001
+NEXT_PUBLIC_FIREBASE_API_KEY=...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
 ```
 
 ## Running the Application
@@ -153,14 +167,22 @@ The frontend application will start on `http://localhost:3000`
 twitter-app/
 ├── backend/
 │   ├── src/
+│   │   ├── ai/            # AI post suggestions (Gemini)
 │   │   ├── auth/          # Authentication module
+│   │   ├── chat/          # WebSocket chat gateway
 │   │   ├── comment/       # Comments functionality
+│   │   ├── conversation/ # Conversation REST API
 │   │   ├── follow/        # Follow/unfollow system
+│   │   ├── firebase/      # Firebase token verification
 │   │   ├── like/          # Like functionality
+│   │   ├── message/       # Message REST API
 │   │   ├── post/          # Posts management
+│   │   ├── prisma/        # Prisma service
 │   │   ├── users/         # User management
 │   │   └── main.ts        # Application entry point
-│   ├── .env.example       # Environment variables template
+│   ├── prisma/            # Schema and migrations
+│   ├── Dockerfile
+│   ├── docker-compose.yml
 │   └── package.json
 │
 └── frontend/
@@ -171,8 +193,11 @@ twitter-app/
     │   ├── profile/       # User profile pages
     │   └── api/           # API proxy routes
     ├── components/        # Reusable components
-    ├── contexts/          # React contexts (Auth, Theme)
-    ├── services/          # API service functions
+    │   ├── Chat/          # Chat UI (sidebar, messages, input)
+    │   ├── auth/          # Login/Register dialog cards
+    │   └── ui/            # Shared UI (dialog, card, input, etc.)
+    ├── contexts/          # Auth, Theme, ChatSocket
+    ├── services/          # API and chat services
     └── package.json
 ```
 
@@ -212,13 +237,46 @@ twitter-app/
 - `GET /comments/:postId` - Get post comments
 - `POST /comments/:postId` - Create comment
 
+### Conversations & Chat
+
+- `GET /conversations` - List conversations for current user
+- `POST /conversations` - Create or get existing conversation (e.g. with another user)
+- `GET /conversations/:id/messages` - Get messages in a conversation
+- **WebSocket** (path `/socket.io`): `conversation:join`, `conversation:leave`, `message:send`; server emits `message:new` for new messages. Authenticate with Firebase token in `auth.token` or `query.token`.
+
+### AI (optional)
+
+- `POST /ai/suggest` - Get AI-generated post suggestion for a topic (requires `GEMINI_API_KEY`).
+
 ## Security Features
 
-- Password hashing with bcrypt
-- JWT-based authentication
-- Protected routes with guards
+- Firebase token verification for API and WebSocket
+- Protected routes with `FirebaseAuthGuard`
 - CORS configuration
 - Input validation and sanitization
+
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for a full list of changes.
+
+### 2026-03-08 – Backend overhaul, Chat, Firebase auth
+
+- **Database:** Switched from TypeORM to **Prisma**; added migrations for `User`, `Post`, `Comment`, `Like`, `Follow`, and new **Conversation**, **ConversationParticipant**, and **Message** models.
+- **Auth:** Replaced JWT/Passport with **Firebase Authentication**. Backend validates Firebase ID tokens via `FirebaseModule` and `FirebaseAuthGuard`; user passwords no longer stored.
+- **Real-time Chat:** Added **WebSocket** chat using Socket.IO (`ChatGateway`). Users join conversation rooms, send messages with `message:send`, and receive `message:new`. REST APIs for conversations and messages under `ConversationModule` and `MessageModule`.
+- **AI module:** Optional **AI service** (Google Gemini) for post suggestions; `POST /ai/suggest` and `AiModule` added.
+- **Docker:** Added `Dockerfile` and `docker-compose.yml` for backend.
+- **Frontend – Chat UI:** New Chat components: `ChatLayout`, `ChatSidebar`, `ChatContainer`, `ChatHeader`, `MessageList`, `MessageBubble`, `ChatInput`; `ChatSocketContext` for WebSocket connection; `chatServices` and storage helpers.
+- **Frontend – Auth:** Login and register flows available as dialog cards (`LoginDialogCard`, `RegisterDialogCard`); Firebase client integration in `lib/firebase.ts` and `AuthContext`.
+- **Frontend – UI:** New shared components: `Avatar`, `Button`, `Card`, `Dialog`, `Field`, `Input`, `Label`, `ScrollArea`, `Separator` (e.g. shadcn-style).
+
+### 2026-03-05 – Frontend UI updates
+
+- **Landing page redesigned to match X-style entry:** The main Next.js entry page (`frontend/app/page.tsx`) now shows a large `X` logo on the left and “Happening now / Join X today” hero copy with primary actions on the right.
+- **Login and register as modals from entry page:** From the entry page, “Create account” and “Sign in” now open the existing register and login flows inside modal dialogs (using a new `Dialog` UI component in `frontend/components/ui/dialog.tsx`), while the dedicated `/login` and `/register` routes remain available.
+- **Card styling refreshed:** Shared card UI (`frontend/components/ui/card.tsx`) no longer shows outer borders, uses a softer, lighter background, and has a rounder radius for a cleaner, floating look.
+- **Input styling refreshed:** Form inputs (`frontend/components/ui/input.tsx`) keep their borders but are now pill-shaped with a lighter gray border and subtle background to better match the updated cards.
+- **Register layout tweak:** On the register page (`frontend/app/register/page.tsx`), the “Join X today” heading and description have been moved above the card on the right side, leaving only the circular `X` symbol on the left for stronger visual balance.
 
 ## License
 

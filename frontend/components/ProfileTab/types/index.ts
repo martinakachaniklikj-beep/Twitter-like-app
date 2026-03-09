@@ -26,4 +26,11 @@ export interface Post {
 export interface UpdateProfileForm {
   displayName: string;
   bio: string;
+  avatar?: FileList;
+}
+
+export interface UpdateProfilePayload {
+  displayName: string;
+  bio: string;
+  avatarUrl?: string;
 }

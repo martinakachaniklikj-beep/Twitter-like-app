@@ -7,37 +7,22 @@ import {
   Query,
   Param,
   UseGuards,
-  Request,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { UsersService } from './users.service';
 import { FollowService } from '../follow/follow.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { FirebaseAuthGuard } from '../firebase/firebase-auth.guard';
 
 interface AuthRequest extends Request {
-  user: { userId: string; email: string; username: string };
-}
-
-interface UpdateProfileDto {
-  displayName?: string;
-  bio?: string;
-  avatarUrl?: string;
-}
-
-interface UserProfileResponse {
-  id: string;
-  username: string;
-  displayName?: string;
-  email: string;
-  bio?: string;
-  avatarUrl?: string;
-  createdAt: Date;
-  postsCount: number;
-  followersCount: number;
-  followingCount: number;
+  user: {
+    uid: string;
+    email?: string;
+  };
 }
 
 @Controller('users')
-@UseGuards(JwtAuthGuard)
+@UseGuards(FirebaseAuthGuard)
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
@@ -50,48 +35,62 @@ export class UsersController {
   }
 
   @Get('profile')
-  getProfile(@Request() req: AuthRequest) {
-    return this.usersService.getProfile(req.user.userId);
+  getProfile(@Req() req: AuthRequest) {
+    return this.usersService.getProfile(req.user.uid);
   }
 
   @Patch('profile')
   updateProfile(
-    @Request() req: AuthRequest,
-    @Body() updateDto: UpdateProfileDto,
+    @Req() req: AuthRequest,
+    @Body() updateDto: {
+      displayName?: string;
+      bio?: string;
+      avatarUrl?: string;
+    },
   ) {
-    return this.usersService.updateProfile(req.user.userId, updateDto);
+    return this.usersService.updateProfile(req.user.uid, updateDto);
   }
 
   @Post(':userId/follow')
-  async follow(@Request() req: AuthRequest, @Param('userId') userId: string) {
-    await this.followService.follow(req.user.userId, userId);
+  async follow(@Req() req: AuthRequest, @Param('userId') userId: string) {
+    await this.followService.follow(req.user.uid, userId);
     return { message: 'User followed successfully' };
   }
 
   @Post(':userId/unfollow')
-  async unfollow(@Request() req: AuthRequest, @Param('userId') userId: string) {
-    await this.followService.unfollow(req.user.userId, userId);
+  async unfollow(@Req() req: AuthRequest, @Param('userId') userId: string) {
+    await this.followService.unfollow(req.user.uid, userId);
     return { message: 'User unfollowed successfully' };
   }
 
+@Post('me')
+async syncUser(@Req() req: AuthRequest) {
+  return this.usersService.syncFirebaseUser(
+    req.user.uid,
+    req.user.email!,
+  );
+}
+
   @Get(':username')
   async getByUsername(
-    @Request() req: AuthRequest,
+    @Req() req: AuthRequest,
     @Param('username') username: string,
-  ): Promise<(UserProfileResponse & { isFollowing: boolean }) | null> {
+  ) {
     const profile = await this.usersService.getProfileByUsername(username);
+
     if (!profile) {
       return null;
     }
 
     const followers = await this.followService.getFollowers(profile.id);
+
     const isFollowing = followers.some(
-      (follow) => follow.follower?.id === req.user.userId,
+      (follow) => follow.follower?.id === req.user.uid,
     );
 
     return {
       ...profile,
       isFollowing,
-    } as UserProfileResponse & { isFollowing: boolean };
+    };
   }
 }

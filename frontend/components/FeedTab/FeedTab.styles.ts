@@ -7,13 +7,10 @@ export const Container = styled.div`
 `;
 
 export const FeedContainer = styled.div`
-  background: rgb(var(--card));
-  border: 1px solid rgb(var(--border));
-  border-radius: 0.5rem;
-  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  padding: 1rem 1rem 1.5rem;
 `;
 
 export const CreatePostCard = styled.div`
@@ -70,6 +67,39 @@ export const PostButton = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
   }
+`;
+
+export const FeedTabsRow = styled.div`
+  display: flex;
+  border-bottom: 1px solid rgb(var(--border));
+  padding: 0;
+`;
+
+export const FeedTabButton = styled.button<{ $active?: boolean }>`
+  flex: 1;
+  padding: 1rem 0;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: rgb(var(--muted-foreground));
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s, border-color 0.2s, font-size 0.2s, font-weight 0.2s;
+
+  &:hover {
+    color: rgb(var(--foreground));
+  }
+
+  ${({ $active }) =>
+    $active &&
+    `
+    color: rgb(var(--foreground));
+    font-weight: 700;
+    font-size: 1rem;
+    border-bottom-color: rgb(var(--foreground));
+  `}
 `;
 
 export const FeedSection = styled.div`

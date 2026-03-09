@@ -4,31 +4,28 @@ import {
   Delete,
   Param,
   UseGuards,
-  Request,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { LikeService } from './like.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { FirebaseAuthGuard } from '../firebase/firebase-auth.guard';
 
 interface AuthRequest extends Request {
-  user: { userId: string; email: string; username: string };
+  user: { uid: string; email?: string };
 }
 
 @Controller('likes')
-@UseGuards(JwtAuthGuard)
+@UseGuards(FirebaseAuthGuard)
 export class LikeController {
   constructor(private readonly likeService: LikeService) {}
 
   @Post(':postId')
-  async likePost(@Request() req: AuthRequest, @Param('postId') postId: string) {
-    return this.likeService.likePost(req.user.userId, postId);
+  likePost(@Req() req: AuthRequest, @Param('postId') postId: string) {
+    return this.likeService.likePost(req.user.uid, postId);
   }
 
   @Delete(':postId')
-  async unlikePost(
-    @Request() req: AuthRequest,
-    @Param('postId') postId: string,
-  ) {
-    await this.likeService.unlikePost(req.user.userId, postId);
-    return { message: 'Post unliked successfully' };
+  unlikePost(@Req() req: AuthRequest, @Param('postId') postId: string) {
+    return this.likeService.unlikePost(req.user.uid, postId);
   }
 }

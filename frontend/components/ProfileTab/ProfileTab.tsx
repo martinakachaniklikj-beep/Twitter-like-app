@@ -42,26 +42,35 @@ import {
   PostMetaItem,
   PostMetaDivider,
 } from './ProfileTab.styles';
-import { UserProfile, Post, UpdateProfileForm } from './types';
+import { UserProfile, Post, UpdateProfileForm, UpdateProfilePayload } from './types';
 import { profileLabels } from './utils/labels';
 import { formatDate } from './utils/utils';
 import { profileServices } from './services/profileServices';
+import { uploadAvatar } from '@/services/storage.service';
 
 export default function ProfileTab() {
   const [isEditing, setIsEditing] = useState(false);
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: profile, isLoading: profileLoading } = useQuery<UserProfile>({
     queryKey: ['profile'],
-    queryFn: () => profileServices.fetchProfile(token!),
-    enabled: !!token,
+    queryFn: async () => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+      return profileServices.fetchProfile(token);
+    },
+    enabled: !!user,
   });
 
   const { data: posts = [], isLoading: postsLoading } = useQuery<Post[]>({
-    queryKey: ['userPosts', user?.username],
-    queryFn: () => profileServices.fetchUserPosts(token!, user!.username),
-    enabled: !!user?.username && !!token,
+    queryKey: ['userPosts', user?.displayName],
+    queryFn: async () => {
+      const token = await user?.getIdToken();
+      if (!token || !user?.displayName) throw new Error('Not authenticated');
+      return profileServices.fetchUserPosts(token, user.displayName);
+    },
+    enabled: !!user?.displayName,
   });
 
   const {
@@ -77,17 +86,34 @@ export default function ProfileTab() {
   });
 
   const updateProfileMutation = useMutation({
-    mutationFn: (data: UpdateProfileForm) => profileServices.updateProfile(token!, data),
+    mutationFn: async (data: UpdateProfilePayload) => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+      console.log('mutation', data)
+      return profileServices.updateProfile(token, data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       setIsEditing(false);
     },
   });
 
-  const onSubmit = (data: UpdateProfileForm) => {
-    updateProfileMutation.mutate(data);
+  const onSubmit = async (data: UpdateProfileForm) => {
+    let avatarUrl = profile?.avatarUrl;
+  
+    if (data.avatar && data.avatar.length > 0) {
+      const file = data.avatar[0];
+      avatarUrl = await uploadAvatar(file, user?.uid || "");
+    }
+    console.log('avatar url',avatarUrl)
+    updateProfileMutation.mutate({
+      displayName: data.displayName,
+      bio: data.bio,
+      avatarUrl,
+    });
   };
-
+  
+  
   const handleEditClick = () => {
     if (isEditing) {
       setIsEditing(false);
@@ -118,11 +144,26 @@ export default function ProfileTab() {
           <ProfileHeader>
             <ProfileHeaderLeft>
               <Avatar>
-                <AvatarText>{user?.username[0].toUpperCase()}</AvatarText>
+              {profile?.avatarUrl ? (
+                  <img
+                    src={profile.avatarUrl}
+                    alt="Avatar"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                    }}
+                  />
+                ) : (
+                  <AvatarText>
+                    {user?.displayName?.[0]?.toUpperCase()}
+                  </AvatarText>
+                )}
               </Avatar>
 
-              <DisplayName>{profile?.displayName || user?.username}</DisplayName>
-              <Username>@{user?.username}</Username>
+              <DisplayName>{profile?.displayName || user?.displayName}</DisplayName>
+              <Username>@{user?.displayName}</Username>
             </ProfileHeaderLeft>
 
             <EditButton onClick={handleEditClick}>
@@ -140,6 +181,15 @@ export default function ProfileTab() {
               <InputGroup>
                 <Label>{profileLabels.bio}</Label>
                 <Textarea rows={3} {...register('bio')} />
+              </InputGroup>
+
+              <InputGroup>
+                <Label>Avatar</Label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  {...register('avatar')}
+                />
               </InputGroup>
 
               <SaveButton type="submit" disabled={isSubmitting}>

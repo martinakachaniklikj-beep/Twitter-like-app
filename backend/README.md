@@ -23,25 +23,63 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Backend for a Twitter-like application, built with [Nest](https://github.com/nestjs/nest), **Prisma** (PostgreSQL) and **Firebase Auth**.
+
+### Stack overview
+
+- **Database access**: Prisma Client generated from `prisma/schema.prisma`  
+  - Main models: `User`, `Post`, `Comment`, `Like`, `Follow`
+  - Client output: `backend/generated/prisma`
+- **Auth**
+  - Email/password login and JWT via `AuthModule` (Nest)
+  - Firebase token validation via `FirebaseModule` and `FirebaseAuthGuard`
+- **Features**
+  - Users: registration, profiles, search, follow/unfollow
+  - Posts: create, feed, reposts
+  - Likes and comments on posts
 
 ## Project setup
 
+From the `backend` directory:
+
 ```bash
-$ npm install
+# install dependencies
+npm install
+
+# generate Prisma Client
+npx prisma generate
 ```
+
+## Environment
+
+Backend expects at least:
+
+```bash
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+
+JWT_SECRET=your-jwt-secret
+JWT_EXPIRATION=7d
+
+FIREBASE_PROJECT_ID=...
+FIREBASE_CLIENT_EMAIL=...
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+```
+
+Prisma connection is configured via `prisma.config.ts` (not directly in `schema.prisma`).
 
 ## Compile and run the project
 
+From the `backend` directory:
+
 ```bash
 # development
-$ npm run start
+npm run start
 
 # watch mode
-$ npm run start:dev
+npm run start:dev
 
 # production mode
-$ npm run start:prod
+npm run start:prod
 ```
 
 ## Run tests

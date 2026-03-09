@@ -1,138 +1,36 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import ThemeToggle from '@/components/Theme/ThemeToggle';
-import {
-  RegisterLabels,
-  Container,
-  ThemeToggleWrapper,
-  CardWrapper,
-  Card,
-  Title,
-  Subtitle,
-  ErrorBox,
-  Form,
-  InputGroup,
-  Label,
-  Input,
-  SubmitButton,
-  Footer,
-  FooterText,
-  FooterLink,
-} from './register.styles';
-
-interface RegisterFormData {
-  email: string;
-  username: string;
-  password: string;
-  confirmPassword: string;
-}
+import { RegisterDialogCard } from '@/components/auth/RegisterDialogCard';
 
 export default function RegisterPage() {
-  const [error, setError] = useState('');
-  const {
-    register: registerField,
-    handleSubmit,
-    watch,
-    formState: { isSubmitting },
-  } = useForm<RegisterFormData>();
-
-  const { register: registerUser } = useAuth();
-  const router = useRouter();
-  const password = watch('password');
-
-  const onSubmit = async (data: RegisterFormData) => {
-    setError('');
-
-    if (data.password !== data.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (data.password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-
-    try {
-      await registerUser(data.email, data.username, data.password);
-      router.push('/home');
-    } catch (err: any) {
-      setError(err.message || 'Failed to create account. Please try again.');
-    }
-  };
-
   return (
-    <Container>
-      <ThemeToggleWrapper>
+    <div className="relative flex min-h-screen flex-col bg-background text-foreground">
+      <div className="absolute right-6 top-6 z-10">
         <ThemeToggle />
-      </ThemeToggleWrapper>
+      </div>
 
-      <CardWrapper>
-        <Card>
-          <Title>{RegisterLabels.title}</Title>
-          <Subtitle>{RegisterLabels.subtitle}</Subtitle>
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center gap-12 px-6 py-10 md:flex-row">
+        {/* Left side – X branding */}
+        <div className="flex w-full flex-1 flex-col items-start md:items-start">
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full border border-border bg-card text-3xl font-black">
+            X
+          </div>
+        </div>
 
-          {error && <ErrorBox>{error}</ErrorBox>}
-
-          <Form onSubmit={handleSubmit(onSubmit)}>
-            <InputGroup>
-              <Label htmlFor="username">{RegisterLabels.usernameLabel}</Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder={RegisterLabels.usernamePlaceholder}
-                {...registerField('username', { required: true })}
-              />
-            </InputGroup>
-
-            <InputGroup>
-              <Label htmlFor="email">{RegisterLabels.emailLabel}</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder={RegisterLabels.emailPlaceholder}
-                {...registerField('email', { required: true })}
-              />
-            </InputGroup>
-
-            <InputGroup>
-              <Label htmlFor="password">{RegisterLabels.passwordLabel}</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder={RegisterLabels.passwordPlaceholder}
-                {...registerField('password', { required: true, minLength: 6 })}
-              />
-            </InputGroup>
-
-            <InputGroup>
-              <Label htmlFor="confirmPassword">{RegisterLabels.confirmPasswordLabel}</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder={RegisterLabels.confirmPasswordPlaceholder}
-                {...registerField('confirmPassword', { required: true })}
-              />
-            </InputGroup>
-
-            <SubmitButton type="submit" disabled={isSubmitting}>
-              {isSubmitting ? RegisterLabels.submittingButton : RegisterLabels.submitButton}
-            </SubmitButton>
-          </Form>
-
-          <Footer>
-            <FooterText>{RegisterLabels.haveAccount}</FooterText>
-            <FooterLink as={Link} href="/login">
-              {RegisterLabels.signInLink}
-            </FooterLink>
-          </Footer>
-        </Card>
-      </CardWrapper>
-    </Container>
+        {/* Right side – auth card */}
+        <div className="w-full max-w-md space-y-6">
+          <div className="space-y-4">
+            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
+              Join X today
+            </h1>
+            <p className="text-xl font-semibold text-muted-foreground">
+              Create a profile to follow people and join the conversation.
+            </p>
+          </div>
+          <RegisterDialogCard />
+        </div>
+      </div>
+    </div>
   );
 }

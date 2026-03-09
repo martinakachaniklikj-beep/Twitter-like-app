@@ -1,39 +1,40 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Like } from './like.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class LikeService {
-  constructor(
-    @InjectRepository(Like)
-    private likeRepository: Repository<Like>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async likePost(userId: string, postId: string): Promise<Like> {
-    const existing = await this.likeRepository.findOne({
+  async likePost(userId: string, postId: string) {
+    const existing = await this.prisma.like.findUnique({
       where: {
-        user: { id: userId },
-        post: { id: postId },
+        userId_postId: { userId, postId },
       },
     });
 
     if (existing) {
-      return existing;
+      return { liked: false };
     }
 
-    const like = this.likeRepository.create({
-      user: { id: userId },
-      post: { id: postId },
+    await this.prisma.like.create({
+      data: {
+        user: { connect: { id: userId } },
+        post: { connect: { id: postId } },
+      },
     });
-    const saved = await this.likeRepository.save(like);
-    return saved;
+
+    return { liked: true };
   }
 
-  async unlikePost(userId: string, postId: string): Promise<void> {
-    await this.likeRepository.delete({
-      user: { id: userId },
-      post: { id: postId },
-    });
+  async unlikePost(userId: string, postId: string) {
+    await this.prisma.like
+      .delete({
+        where: {
+          userId_postId: { userId, postId },
+        },
+      })
+      .catch(() => null);
+
+    return { unliked: true };
   }
 }

@@ -24,7 +24,8 @@ import {
   EmptyText,
   FeedContainer,
   FeedSection,
-  FeedTitle,
+  FeedTabButton,
+  FeedTabsRow,
   LoadingCard,
   LoadingText,
   ModalCloseButton,
@@ -61,18 +62,30 @@ import { formatDate, readFileAsDataURL } from './utils/utils';
 import { feedServices } from './services/feedServices';
 
 export default function FeedTab() {
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [imageUrl, setImageUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [gifUrl, setGifUrl] = useState('');
+  const [isGifPickerOpen, setIsGifPickerOpen] = useState(false);
+  const [gifSearchTerm, setGifSearchTerm] = useState('');
+  const [gifResults, setGifResults] = useState<
+    { id: string; title: string; previewUrl: string; originalUrl: string }[]
+  >([]);
+  const [isSearchingGifs, setIsSearchingGifs] = useState(false);
   const [commentModalPost, setCommentModalPost] = useState<Post | null>(null);
   const [commentText, setCommentText] = useState('');
+  const [feedType, setFeedType] = useState<'for_you' | 'following'>('for_you');
 
   const { data: comments = [] } = useQuery({
     queryKey: ['comments', commentModalPost?.id],
-    queryFn: () => feedServices.fetchComments(token!, commentModalPost!.id),
-    enabled: !!commentModalPost && !!token,
+    queryFn: async () => {
+      const token = await user?.getIdToken();
+      if (!token || !commentModalPost) throw new Error('Not authenticated');
+      return feedServices.fetchComments(token, commentModalPost.id);
+    },
+    enabled: !!commentModalPost && !!user,
   });
 
   const {
@@ -83,11 +96,15 @@ export default function FeedTab() {
   } = useForm<CreatePostFormType>();
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
-    queryKey: ['feed'],
-    queryFn: ({ pageParam = 1 }) => feedServices.fetchFeed(token!, pageParam),
+    queryKey: ['feed', feedType],
+    queryFn: async ({ pageParam = 1 }) => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+      return feedServices.fetchFeed(token, pageParam, 10, feedType);
+    },
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     initialPageParam: 1,
-    enabled: !!token,
+    enabled: !!user,
     staleTime: 0,
     refetchOnMount: true,
   });
@@ -95,23 +112,38 @@ export default function FeedTab() {
   const posts = data?.pages.flatMap((page) => page.data) ?? [];
 
   const createPostMutation = useMutation({
-    mutationFn: (data: CreatePostFormType) =>
-      feedServices.createPost(token!, data.content, imageUrl || undefined),
+    mutationFn: async (data: CreatePostFormType) => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+      return feedServices.createPost(
+        token,
+        data.content,
+        imageUrl || undefined,
+        gifUrl || undefined,
+      );
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       reset();
       setImageUrl('');
+      setGifUrl('');
+      setGifResults([]);
+      setGifSearchTerm('');
+      setIsGifPickerOpen(false);
     },
   });
 
   const likeMutation = useMutation({
-    mutationFn: ({ postId, isLiked }: { postId: string; isLiked: boolean }) =>
-      isLiked ? feedServices.unlikePost(token!, postId) : feedServices.likePost(token!, postId),
+    mutationFn: async ({ postId, isLiked }: { postId: string; isLiked: boolean }) => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+      return isLiked ? feedServices.unlikePost(token, postId) : feedServices.likePost(token, postId);
+    },
     onMutate: async ({ postId, isLiked }) => {
-      await queryClient.cancelQueries({ queryKey: ['feed'] });
-      const previousData = queryClient.getQueryData(['feed']);
+      await queryClient.cancelQueries({ queryKey: ['feed', feedType] });
+      const previousData = queryClient.getQueryData(['feed', feedType]);
 
-      queryClient.setQueryData(['feed'], (old: any) => {
+      queryClient.setQueryData(['feed', feedType], (old: any) => {
         if (!old) return old;
         return {
           ...old,
@@ -134,7 +166,7 @@ export default function FeedTab() {
     },
     onError: (err, variables, context: any) => {
       if (context?.previousData) {
-        queryClient.setQueryData(['feed'], context.previousData);
+        queryClient.setQueryData(['feed', feedType], context.previousData);
       }
     },
     onSettled: () => {
@@ -143,8 +175,11 @@ export default function FeedTab() {
   });
 
   const commentMutation = useMutation({
-    mutationFn: ({ postId, content }: { postId: string; content: string }) =>
-      feedServices.createComment(token!, postId, content),
+    mutationFn: async ({ postId, content }: { postId: string; content: string }) => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+      return feedServices.createComment(token, postId, content);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       queryClient.invalidateQueries({ queryKey: ['comments', commentModalPost?.id] });
@@ -153,27 +188,32 @@ export default function FeedTab() {
   });
 
   const repostMutation = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       postId,
       isReposted,
       content,
       imageUrl,
+      gifUrl,
     }: {
       postId: string;
       isReposted: boolean;
       content?: string;
       imageUrl?: string;
-    }) =>
-      isReposted
-        ? feedServices.unrepostPost(token!, postId)
-        : feedServices.repostPost(token!, postId, content, imageUrl),
+      gifUrl?: string;
+    }) => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+      return isReposted
+        ? feedServices.unrepostPost(token, postId)
+        : feedServices.repostPost(token, postId, content, imageUrl, gifUrl);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feed'] });
     },
   });
 
   const onSubmit = (data: CreatePostFormType) => {
-    if (data.content.trim()) {
+    if (data.content.trim() || imageUrl || gifUrl) {
       createPostMutation.mutate(data);
     }
   };
@@ -190,9 +230,66 @@ export default function FeedTab() {
     }
   };
 
+  const handleGifSearch = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const term = gifSearchTerm.trim();
+    if (!term) return;
+
+    const apiKey = process.env.NEXT_PUBLIC_GIPHY_API_KEY;
+    if (!apiKey) {
+      console.error('GIPHY API key is not configured');
+      return;
+    }
+
+    try {
+      setIsSearchingGifs(true);
+      const response = await fetch(
+        `https://api.giphy.com/v1/gifs/search?api_key=${apiKey}&q=${encodeURIComponent(
+          term,
+        )}&limit=24&rating=pg-13`,
+      );
+      const json = await response.json();
+      const items =
+        json?.data?.map((item: any) => ({
+          id: item.id as string,
+          title: (item.title as string) || 'GIF',
+          previewUrl:
+            (item.images?.fixed_height_small_still?.url as string) ||
+            (item.images?.fixed_height_small?.url as string) ||
+            (item.images?.downsized_still?.url as string) ||
+            (item.images?.downsized?.url as string),
+          originalUrl:
+            (item.images?.original?.url as string) ||
+            (item.images?.downsized_large?.url as string) ||
+            (item.images?.downsized?.url as string),
+        })) ?? [];
+      setGifResults(items.filter((g: any) => g.previewUrl && g.originalUrl));
+    } catch (error) {
+      console.error('Failed to search GIFs', error);
+    } finally {
+      setIsSearchingGifs(false);
+    }
+  };
+
   return (
     <Container>
       <FeedContainer>
+        <FeedTabsRow>
+          <FeedTabButton
+            $active={feedType === 'for_you'}
+            onClick={() => setFeedType('for_you')}
+            type="button"
+          >
+            {feedLabels.forYouTab}
+          </FeedTabButton>
+          <FeedTabButton
+            $active={feedType === 'following'}
+            onClick={() => setFeedType('following')}
+            type="button"
+          >
+            {feedLabels.followingTab}
+          </FeedTabButton>
+        </FeedTabsRow>
         <CreatePostCard>
           <CreatePostForm onSubmit={handleSubmit(onSubmit)}>
             <PostTextarea
@@ -215,6 +312,41 @@ export default function FeedTab() {
                 <button
                   type="button"
                   onClick={() => setImageUrl('')}
+                  style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: 'white',
+                  }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            )}
+            {gifUrl && (
+              <div style={{ position: 'relative', margin: '10px 0' }}>
+                <img
+                  src={gifUrl}
+                  alt="Selected GIF"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '300px',
+                    borderRadius: '12px',
+                    objectFit: 'cover',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setGifUrl('')}
                   style={{
                     position: 'absolute',
                     top: '8px',
@@ -262,6 +394,26 @@ export default function FeedTab() {
                 >
                   <ImageIcon size={20} />
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setIsGifPickerOpen(true)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '8px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--primary-color, #1d9bf0)',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                  }}
+                  title="Add GIF"
+                >
+                  GIF
+                </button>
               </div>
               <PostButton type="submit" disabled={isSubmitting}>
                 {feedLabels.postButton}
@@ -271,16 +423,22 @@ export default function FeedTab() {
         </CreatePostCard>
 
         <FeedSection>
-          <FeedTitle>{feedLabels.feedTitle}</FeedTitle>
-
           {isLoading ? (
             <LoadingCard>
               <LoadingText>{feedLabels.loadingPosts}</LoadingText>
             </LoadingCard>
           ) : posts.length === 0 ? (
             <EmptyCard>
-              <EmptyText>{feedLabels.noPosts}</EmptyText>
-              <EmptySubtext>{feedLabels.noPostsSubtitle}</EmptySubtext>
+              <EmptyText>
+                {feedType === 'following'
+                  ? feedLabels.followingEmpty
+                  : feedLabels.noPosts}
+              </EmptyText>
+              <EmptySubtext>
+                {feedType === 'following'
+                  ? feedLabels.followingEmptySubtitle
+                  : feedLabels.noPostsSubtitle}
+              </EmptySubtext>
             </EmptyCard>
           ) : (
             posts.map((post: Post) => (
@@ -304,7 +462,7 @@ export default function FeedTab() {
                       onClick={() => router.push(`/profile/${post.authorUsername}`)}
                       style={{ cursor: 'pointer', fontWeight: 500 }}
                     >
-                      {post.authorUsername === user?.username
+                      {post.authorUsername === user?.displayName
                         ? feedLabels.youReposted
                         : post.authorUsername}
                     </span>
@@ -343,11 +501,15 @@ export default function FeedTab() {
 
                     <PostText>{post.isRepost ? post.originalPostContent : post.content}</PostText>
 
-                    {(post.isRepost ? post.originalPostImageUrl : post.imageUrl) && (
+                    {(post.isRepost ? post.originalPostGifUrl : post.gifUrl) ||
+                    (post.isRepost ? post.originalPostImageUrl : post.imageUrl) ? (
                       <div style={{ marginTop: '12px' }}>
                         <img
-                          src={post.isRepost ? post.originalPostImageUrl : post.imageUrl}
-                          alt="Post image"
+                          src={
+                            (post.isRepost ? post.originalPostGifUrl : post.gifUrl) ||
+                            (post.isRepost ? post.originalPostImageUrl : post.imageUrl)
+                          }
+                          alt="Post media"
                           style={{
                             width: '100%',
                             borderRadius: '12px',
@@ -356,7 +518,7 @@ export default function FeedTab() {
                           }}
                         />
                       </div>
-                    )}
+                    ) : null}
 
                     <PostActions>
                       <PostActionButton onClick={() => setCommentModalPost(post)}>
@@ -364,7 +526,7 @@ export default function FeedTab() {
                         <PostActionCount>{post.repliesCount || 0}</PostActionCount>
                       </PostActionButton>
 
-                      {post.authorId !== user?.id && (
+                      {post.authorId !== user?.uid && (
                         <PostActionButton
                           onClick={() =>
                             repostMutation.mutate({
@@ -486,6 +648,87 @@ export default function FeedTab() {
                 {commentMutation.isPending ? feedLabels.replying : feedLabels.reply}
               </PostButton>
             </CommentInputContainer>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {isGifPickerOpen && (
+        <ModalOverlay onClick={() => setIsGifPickerOpen(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <ModalTitle>Select a GIF</ModalTitle>
+              <ModalCloseButton onClick={() => setIsGifPickerOpen(false)}>
+                <X size={24} />
+              </ModalCloseButton>
+            </ModalHeader>
+
+            <form
+              onSubmit={handleGifSearch}
+              style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}
+            >
+              <input
+                type="text"
+                value={gifSearchTerm}
+                onChange={(e) => setGifSearchTerm(e.target.value)}
+                placeholder="Search GIFs"
+                style={{
+                  flex: 1,
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '0.5rem',
+                  border: '1px solid rgb(var(--input))',
+                  background: 'rgb(var(--background))',
+                  color: 'rgb(var(--foreground))',
+                }}
+              />
+              <PostButton type="submit" disabled={isSearchingGifs}>
+                {isSearchingGifs ? feedLabels.loading : 'Search'}
+              </PostButton>
+            </form>
+
+            {gifResults.length === 0 && !isSearchingGifs ? (
+              <div style={{ color: 'rgb(var(--muted-foreground))', fontSize: '0.875rem' }}>
+                Try searching for a reaction like &quot;happy&quot; or &quot;wow&quot;.
+              </div>
+            ) : null}
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                gap: '8px',
+                maxHeight: '320px',
+                overflowY: 'auto',
+                marginTop: '0.5rem',
+              }}
+            >
+              {gifResults.map((gif) => (
+                <button
+                  key={gif.id}
+                  type="button"
+                  onClick={() => {
+                    setGifUrl(gif.originalUrl);
+                    setIsGifPickerOpen(false);
+                  }}
+                  style={{
+                    padding: 0,
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                  }}
+                  title={gif.title}
+                >
+                  <img
+                    src={gif.previewUrl}
+                    alt={gif.title}
+                    style={{
+                      width: '100%',
+                      borderRadius: '0.5rem',
+                      objectFit: 'cover',
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
           </ModalContent>
         </ModalOverlay>
       )}

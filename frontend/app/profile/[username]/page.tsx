@@ -72,7 +72,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ username
 }
 
 function UserProfileContent({ username }: { username: string }) {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
 
@@ -82,6 +82,8 @@ function UserProfileContent({ username }: { username: string }) {
     queryKey: ['userProfile', username],
     enabled: !!username,
     queryFn: async () => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
       const response = await fetch(`${apiUrl}/users/${username}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -99,6 +101,8 @@ function UserProfileContent({ username }: { username: string }) {
   const { data: posts = [] } = useQuery<Post[]>({
     queryKey: ['userPosts', username],
     queryFn: async () => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
       const response = await fetch(`${apiUrl}/posts/user/${username}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -110,6 +114,8 @@ function UserProfileContent({ username }: { username: string }) {
 
   const followMutation = useMutation({
     mutationFn: async ({ userId, isFollowing }: { userId: string; isFollowing: boolean }) => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
       const endpoint = isFollowing ? 'unfollow' : 'follow';
       const response = await fetch(`${apiUrl}/users/${userId}/${endpoint}`, {
         method: 'POST',
@@ -154,7 +160,8 @@ function UserProfileContent({ username }: { username: string }) {
     );
   }
 
-  const isOwnProfile = user?.username === username;
+  const isOwnProfile = user?.uid === profile.id;
+
 
   return (
     <PageContainer>

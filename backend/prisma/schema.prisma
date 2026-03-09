@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id          String    @id
+  email       String    @unique
+  username    String    @unique
+  displayName String?
+  bio         String?
+  avatarUrl   String?
+
+  posts                Post[]
+  likes                Like[]
+  comments             Comment[]
+  following            Follow[] @relation("UserFollowing")
+  followers            Follow[] @relation("UserFollowers")
+  conversationParticipants ConversationParticipant[]
+  sentMessages         Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Post {
+  id             String    @id @default(uuid()) @db.Uuid
+  content        String?
+  imageUrl       String?
+  gifUrl         String?
+  createdAt      DateTime  @default(now())
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String    
+
+  likes          Like[]
+  comments       Comment[]
+  reposts        Post[]    @relation("PostReposts")
+  originalPost   Post?     @relation("PostReposts", fields: [originalPostId], references: [id])
+  originalPostId String?   @db.Uuid
+
+  @@map("posts")
+}
+
+model Comment {
+  id        String   @id @default(uuid()) @db.Uuid
+  content   String
+  createdAt DateTime @default(now())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String 
+
+  post   Post  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String @db.Uuid
+
+  @@map("comments")
+}
+
+model Like {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String 
+
+  post   Post  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String @db.Uuid
+
+  @@unique([userId, postId])
+  @@map("likes")
+}
+
+model Follow {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now())
+
+  follower   User   @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  followerId String 
+
+  following   User   @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  followingId String 
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+model Conversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  type      String   @default("direct") // 'direct' | 'group'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @db.Uuid
+  userId         String
+  joinedAt       DateTime @default(now())
+  lastReadAt     DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @db.Uuid
+  senderId       String
+  content        String
+  status         String   @default("sent") // 'sending' | 'sent' | 'delivered' | 'read'
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}

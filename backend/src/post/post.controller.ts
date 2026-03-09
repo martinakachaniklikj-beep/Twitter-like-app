@@ -6,55 +6,60 @@ import {
   Param,
   Delete,
   UseGuards,
-  Request,
+  Req,
   Query,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { PostService } from './post.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { FirebaseAuthGuard } from '../firebase/firebase-auth.guard';
 
 interface AuthRequest extends Request {
-  user: { userId: string; email: string; username: string };
-}
-
-interface CreatePostDto {
-  content?: string;
-  imageUrl?: string;
-  originalPostId?: string;
+  user: { uid: string; email?: string };
 }
 
 @Controller('posts')
-@UseGuards(JwtAuthGuard)
+@UseGuards(FirebaseAuthGuard)
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
   @Post()
-  async create(
-    @Request() req: AuthRequest,
-    @Body() dto: CreatePostDto,
-  ): Promise<any> {
-    return this.postService.create(req.user.userId, dto);
+  create(
+    @Req() req: AuthRequest,
+    @Body()
+    dto: {
+      content?: string;
+      imageUrl?: string;
+      gifUrl?: string;
+      originalPostId?: string;
+    },
+  ) {
+    return this.postService.create(req.user.uid, dto);
   }
 
   @Get()
   findAll(
-    @Request() req: AuthRequest,
+    @Req() req: AuthRequest,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     const pageNum = parseInt(page || '1', 10);
     const limitNum = parseInt(limit || '10', 10);
-    return this.postService.findAll(pageNum, limitNum, req.user.userId);
+
+    return this.postService.findAll(pageNum, limitNum, req.user.uid);
   }
 
   @Get('feed')
   getFeed(
-    @Request() req: AuthRequest,
+    @Req() req: AuthRequest,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('type') type?: 'for_you' | 'following',
   ) {
     const pageNum = parseInt(page || '1', 10);
     const limitNum = parseInt(limit || '10', 10);
-    return this.postService.getFeed(req.user.userId, pageNum, limitNum);
+    const feedType = type === 'following' ? 'following' : 'for_you';
+
+    return this.postService.getFeed(req.user.uid, pageNum, limitNum, feedType);
   }
 
   @Get('user/:username')
@@ -68,7 +73,7 @@ export class PostController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.postService.remove(id);
+  remove(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.postService.remove(id, req.user.uid);
   }
 }

@@ -5,34 +5,31 @@ import {
   Body,
   Param,
   UseGuards,
-  Request,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { CommentService } from './comment.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { FirebaseAuthGuard } from '../firebase/firebase-auth.guard';
 
 interface AuthRequest extends Request {
-  user: { userId: string; email: string; username: string };
-}
-
-interface CreateCommentDto {
-  content: string;
+  user: { uid: string; email?: string };
 }
 
 @Controller('comments')
-@UseGuards(JwtAuthGuard)
+@UseGuards(FirebaseAuthGuard)
 export class CommentController {
   constructor(private readonly commentService: CommentService) {}
 
   @Post(':postId')
   async create(
-    @Request() req: AuthRequest,
+    @Req() req: AuthRequest,
     @Param('postId') postId: string,
-    @Body() createCommentDto: CreateCommentDto,
+    @Body() body: { content: string },
   ) {
     return this.commentService.create(
-      req.user.userId,
+      req.user.uid,
       postId,
-      createCommentDto.content,
+      body.content,
     );
   }
 

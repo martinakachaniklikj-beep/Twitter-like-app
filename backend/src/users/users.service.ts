@@ -1,97 +1,73 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from './user.entity';
-import * as bcrypt from 'bcrypt';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectRepository(User)
-    private usersRepository: Repository<User>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-    email: string,
-    username: string,
-    password: string,
-  ): Promise<User> {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = this.usersRepository.create({
-      email,
-      username,
-      password: hashedPassword,
+  async create(uid: string, email: string, username: string) {
+    const existing = await this.prisma.user.findUnique({
+      where: { id: uid },
     });
-    return this.usersRepository.save(user);
+
+    if (existing) {
+      return existing;
+    }
+
+    return this.prisma.user.create({
+      data: {
+        id: uid,
+        email,
+        username,
+      },
+    });
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { email } });
+  async findByEmail(email: string) {
+    return this.prisma.user.findUnique({ where: { email } });
   }
 
-  async findByUsername(username: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { username } });
+  async findByUsername(username: string) {
+    return this.prisma.user.findUnique({ where: { username } });
   }
 
-  async findById(id: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { id } });
+  async findById(id: string) {
+    return this.prisma.user.findUnique({ where: { id } });
   }
 
-  async validatePassword(
-    password: string,
-    hashedPassword: string,
-  ): Promise<boolean> {
-    return bcrypt.compare(password, hashedPassword);
-  }
-
-  async search(query: string): Promise<
-    Array<{
-      id: string;
-      username: string;
-      displayName?: string;
-      email: string;
-      bio?: string;
-      avatarUrl?: string;
-    }>
-  > {
+  async search(query: string) {
     if (!query || query.length < 2) {
       return [];
     }
 
-    const users = await this.usersRepository
-      .createQueryBuilder('user')
-      .where('LOWER(user.username) LIKE LOWER(:query)', {
-        query: `%${query}%`,
-      })
-      .orWhere('LOWER(user.email) LIKE LOWER(:query)', { query: `%${query}%` })
-      .take(10)
-      .getMany();
+    const users = await this.prisma.user.findMany({
+      where: {
+        OR: [
+          { username: { contains: query, mode: 'insensitive' } },
+          { email: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      take: 10,
+    });
 
     return users.map((user) => ({
       id: user.id,
       username: user.username,
-      displayName: user.displayName,
+      displayName: user.displayName ?? undefined,
       email: user.email,
-      bio: user.bio,
-      avatarUrl: user.avatarUrl,
+      bio: user.bio ?? undefined,
+      avatarUrl: user.avatarUrl ?? undefined,
     }));
   }
 
-  async getProfile(userId: string): Promise<{
-    id: string;
-    username: string;
-    displayName?: string;
-    email: string;
-    bio?: string;
-    avatarUrl?: string;
-    createdAt: Date;
-    postsCount: number;
-    followersCount: number;
-    followingCount: number;
-  } | null> {
-    const user = await this.usersRepository.findOne({
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      relations: ['posts', 'followers', 'following'],
+      include: {
+        posts: true,
+        followers: true,
+        following: true,
+      },
     });
 
     if (!user) {
@@ -101,32 +77,25 @@ export class UsersService {
     return {
       id: user.id,
       username: user.username,
-      displayName: user.displayName,
+      displayName: user.displayName ?? undefined,
       email: user.email,
-      bio: user.bio,
-      avatarUrl: user.avatarUrl,
+      bio: user.bio ?? undefined,
+      avatarUrl: user.avatarUrl ?? undefined,
       createdAt: user.createdAt,
-      postsCount: user.posts?.length || 0,
-      followersCount: user.followers?.length || 0,
-      followingCount: user.following?.length || 0,
+      postsCount: user.posts.length,
+      followersCount: user.followers.length,
+      followingCount: user.following.length,
     };
   }
 
-  async getProfileByUsername(username: string): Promise<{
-    id: string;
-    username: string;
-    displayName?: string;
-    email: string;
-    bio?: string;
-    avatarUrl?: string;
-    createdAt: Date;
-    postsCount: number;
-    followersCount: number;
-    followingCount: number;
-  } | null> {
-    const user = await this.usersRepository.findOne({
+  async getProfileByUsername(username: string) {
+    const user = await this.prisma.user.findUnique({
       where: { username },
-      relations: ['posts', 'followers', 'following'],
+      include: {
+        posts: true,
+        followers: true,
+        following: true,
+      },
     });
 
     if (!user) {
@@ -136,33 +105,46 @@ export class UsersService {
     return {
       id: user.id,
       username: user.username,
-      displayName: user.displayName,
+      displayName: user.displayName ?? undefined,
       email: user.email,
-      bio: user.bio,
-      avatarUrl: user.avatarUrl,
+      bio: user.bio ?? undefined,
+      avatarUrl: user.avatarUrl ?? undefined,
       createdAt: user.createdAt,
-      postsCount: user.posts?.length || 0,
-      followersCount: user.followers?.length || 0,
-      followingCount: user.following?.length || 0,
+      postsCount: user.posts.length,
+      followersCount: user.followers.length,
+      followingCount: user.following.length,
     };
   }
 
   async updateProfile(
     userId: string,
     updates: { displayName?: string; bio?: string; avatarUrl?: string },
-  ): Promise<{
-    id: string;
-    username: string;
-    displayName?: string;
-    email: string;
-    bio?: string;
-    avatarUrl?: string;
-    createdAt: Date;
-    postsCount: number;
-    followersCount: number;
-    followingCount: number;
-  } | null> {
-    await this.usersRepository.update(userId, updates);
+  ) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: updates,
+    });
+
     return this.getProfile(userId);
   }
+
+  async syncFirebaseUser(id: string, email: string) {
+    const existing = await this.prisma.user.findUnique({
+      where: { id },
+    });
+  
+    if (existing) {
+      return existing;
+    }
+  
+    return this.prisma.user.create({
+      data: {
+        id,
+        email,
+        username: email.split('@')[0],
+      },
+    });
+  }
+  
 }
+
