@@ -64,13 +64,13 @@ export default function ProfileTab() {
   });
 
   const { data: posts = [], isLoading: postsLoading } = useQuery<Post[]>({
-    queryKey: ['userPosts', user?.displayName],
+    queryKey: ['userPosts', profile?.username],
     queryFn: async () => {
       const token = await user?.getIdToken();
-      if (!token || !user?.displayName) throw new Error('Not authenticated');
-      return profileServices.fetchUserPosts(token, user.displayName);
+      if (!token || !profile?.username) throw new Error('Not authenticated');
+      return profileServices.fetchUserPosts(token, profile.username);
     },
-    enabled: !!user?.displayName,
+    enabled: !!profile?.username && !!user,
   });
 
   const {

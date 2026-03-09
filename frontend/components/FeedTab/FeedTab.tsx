@@ -60,14 +60,14 @@ import { Post, Comment, CreatePostForm as CreatePostFormType } from './types';
 import { feedLabels } from './utils/labels';
 import { formatDate, readFileAsDataURL } from './utils/utils';
 import { feedServices } from './services/feedServices';
+import { useComposer } from '../../contexts/ComposerContext';
 
 export default function FeedTab() {
   const { user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [imageUrl, setImageUrl] = useState('');
+  const { state, dispatch } = useComposer();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [gifUrl, setGifUrl] = useState('');
   const [isGifPickerOpen, setIsGifPickerOpen] = useState(false);
   const [gifSearchTerm, setGifSearchTerm] = useState('');
   const [gifResults, setGifResults] = useState<
@@ -110,6 +110,7 @@ export default function FeedTab() {
   });
 
   const posts = data?.pages.flatMap((page) => page.data) ?? [];
+  console.log(posts);
 
   const createPostMutation = useMutation({
     mutationFn: async (data: CreatePostFormType) => {
@@ -118,15 +119,15 @@ export default function FeedTab() {
       return feedServices.createPost(
         token,
         data.content,
-        imageUrl || undefined,
-        gifUrl || undefined,
+        state.imageUrl || undefined,
+        state.gifUrl || undefined,
       );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       reset();
-      setImageUrl('');
-      setGifUrl('');
+      dispatch({ type: 'SET_IMAGE_URL', imageUrl: undefined });
+      dispatch({ type: 'SET_GIF_URL', gifUrl: undefined });
       setGifResults([]);
       setGifSearchTerm('');
       setIsGifPickerOpen(false);
@@ -213,7 +214,7 @@ export default function FeedTab() {
   });
 
   const onSubmit = (data: CreatePostFormType) => {
-    if (data.content.trim() || imageUrl || gifUrl) {
+    if (data.content.trim() || state.imageUrl || state.gifUrl) {
       createPostMutation.mutate(data);
     }
   };
@@ -223,7 +224,7 @@ export default function FeedTab() {
     if (file) {
       try {
         const dataUrl = await readFileAsDataURL(file);
-        setImageUrl(dataUrl);
+        dispatch({ type: 'SET_IMAGE_URL', imageUrl: dataUrl });
       } catch (error) {
         alert(feedLabels.selectImageFile);
       }
@@ -297,10 +298,10 @@ export default function FeedTab() {
               rows={3}
               {...register('content', { required: true })}
             />
-            {imageUrl && (
+            {state.imageUrl && (
               <div style={{ position: 'relative', margin: '10px 0' }}>
                 <img
-                  src={imageUrl}
+                  src={state.imageUrl}
                   alt="Preview"
                   style={{
                     maxWidth: '100%',
@@ -311,7 +312,7 @@ export default function FeedTab() {
                 />
                 <button
                   type="button"
-                  onClick={() => setImageUrl('')}
+                  onClick={() => dispatch({ type: 'SET_IMAGE_URL', imageUrl: undefined })}
                   style={{
                     position: 'absolute',
                     top: '8px',
@@ -332,10 +333,10 @@ export default function FeedTab() {
                 </button>
               </div>
             )}
-            {gifUrl && (
+            {state.gifUrl && (
               <div style={{ position: 'relative', margin: '10px 0' }}>
                 <img
-                  src={gifUrl}
+                  src={state.gifUrl}
                   alt="Selected GIF"
                   style={{
                     maxWidth: '100%',
@@ -346,7 +347,7 @@ export default function FeedTab() {
                 />
                 <button
                   type="button"
-                  onClick={() => setGifUrl('')}
+                  onClick={() => dispatch({ type: 'SET_GIF_URL', gifUrl: undefined })}
                   style={{
                     position: 'absolute',
                     top: '8px',
@@ -474,7 +475,22 @@ export default function FeedTab() {
                     onClick={() => router.push(`/profile/${post.authorUsername}`)}
                     style={{ cursor: 'pointer' }}
                   >
-                    <PostAvatarText>{post.authorUsername[0].toUpperCase()}</PostAvatarText>
+                    {post.avatarUrl ? (
+                      <img
+                        src={post.avatarUrl}
+                        alt={post.authorUsername}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    ) : (
+                      <PostAvatarText>
+                        {(post.authorDisplayName || post.authorUsername)[0]?.toUpperCase()}
+                      </PostAvatarText>
+                    )}
                   </PostAvatar>
 
                   <PostBody>
@@ -706,7 +722,7 @@ export default function FeedTab() {
                   key={gif.id}
                   type="button"
                   onClick={() => {
-                    setGifUrl(gif.originalUrl);
+                    dispatch({ type: 'SET_GIF_URL', gifUrl: gif.originalUrl });
                     setIsGifPickerOpen(false);
                   }}
                   style={{

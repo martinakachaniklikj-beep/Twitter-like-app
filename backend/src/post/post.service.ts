@@ -224,6 +224,7 @@ export class PostService {
       authorId: post.user?.id,
       authorUsername: post.user?.username,
       authorDisplayName: post.user?.displayName ?? post.user?.username,
+      avatarUrl: post.user?.avatarUrl,
 
       likesCount: post.likes?.length ?? 0,
       repliesCount: post.comments?.length ?? 0,

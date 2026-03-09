@@ -3,6 +3,7 @@ export interface Post {
   content: string;
   imageUrl?: string;
   gifUrl?: string;
+  avatarUrl?: string;
   authorId: string;
   authorUsername: string;
   authorDisplayName?: string;

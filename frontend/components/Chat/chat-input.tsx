@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 
 import { ChatInputRoot } from "./chat.styles"
+import { useComposer } from "../../contexts/ComposerContext"
 
 export function ChatInput({
   onSend,
@@ -22,7 +23,7 @@ export function ChatInput({
 }) {
 
   const [message, setMessage] = useState("")
-  const [files, setFiles] = useState<File[]>([])
+  const { state, dispatch } = useComposer()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const isSupportedFileType = (file: File) =>
@@ -31,13 +32,13 @@ export function ChatInput({
   const send = useCallback(() => {
     const trimmed = message.trim()
 
-    if (!trimmed && files.length === 0) return
+    if (!trimmed && state.files.length === 0) return
 
-    onSend(trimmed, files)
+    onSend(trimmed, state.files)
 
     setMessage("")
-    setFiles([])
-  }, [message, files, onSend])
+    dispatch({ type: "CLEAR_FILES" })
+  }, [message, state.files, onSend, dispatch])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -56,7 +57,7 @@ export function ChatInput({
       console.warn(`Skipped ${invalidCount} unsupported file(s). Only images and videos are allowed.`)
     }
     if (valid.length) {
-      setFiles((prev) => [...prev, ...valid])
+      dispatch({ type: "ADD_FILES", files: valid })
     }
     // Reset input so the same file can be selected again if needed
     e.target.value = ""
@@ -123,9 +124,9 @@ export function ChatInput({
         className="flex-1"
       />
 
-      {files.length > 0 && (
+      {state.files.length > 0 && (
         <div className="flex flex-wrap gap-2 px-2 pb-2 text-xs text-muted-foreground">
-          {files.map((file, index) => (
+          {state.files.map((file: File, index: number) => (
             <span
               key={`${file.name}-${index}`}
               className="px-2 py-1 rounded-full bg-muted"

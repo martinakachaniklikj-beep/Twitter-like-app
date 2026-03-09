@@ -50,6 +50,7 @@ interface UserProfile {
   username: string;
   displayName?: string;
   bio?: string;
+  avatarUrl?: string;
   createdAt: string;
   followersCount: number;
   followingCount: number;
@@ -186,9 +187,24 @@ function UserProfileContent({ username }: { username: string }) {
           <ProfileContent>
             <ProfileHeader>
               <ProfileHeaderLeft>
-                <Avatar>
-                  <AvatarText>{username[0].toUpperCase()}</AvatarText>
-                </Avatar>
+              <Avatar>
+                {profile.avatarUrl ? (
+                  <img
+                    src={profile.avatarUrl}
+                    alt="Avatar"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                    }}
+                  />
+                ) : (
+                  <AvatarText>
+                    {(profile.displayName || username)[0]?.toUpperCase()}
+                  </AvatarText>
+                )}
+              </Avatar>
 
                 <DisplayName>{profile.displayName || username}</DisplayName>
                 <Username>@{username}</Username>
