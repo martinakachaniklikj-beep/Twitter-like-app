@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented in this file.
 
+## 2026-03-12 – Rate limiting for third-party APIs
+
+### Added
+
+- **Global API rate limiting:** Introduced `@nestjs/throttler` with a default limit of **60 requests per 60 seconds per client** across the backend to reduce abuse risk in production.
+- **Gemini AI protection:** All `/geminiAi/*` endpoints are now capped at **20 requests per 60 seconds per client**, helping prevent runaway Google Generative AI usage and unexpected billing spikes.
+- **Stocks API protection:** Stock quote and history endpoints (`GET /stocks/:symbol`, `GET /stocks/:symbol/history`) are limited to **5 requests per 60 seconds per client** to stay within typical Alpha Vantage free‑tier constraints.
+- **Football fixtures protection:** Live match and fixture detail endpoints (`GET /matches`, `GET /matches/:id`) are limited to **10 requests per 60 seconds per client** to guard against accidental or malicious overuse of the API‑Sports integration.
+
 ## 2026-03-08 – Backend overhaul, Chat, Firebase auth
 
 ### Added

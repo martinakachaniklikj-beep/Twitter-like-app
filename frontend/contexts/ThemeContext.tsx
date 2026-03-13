@@ -2,7 +2,12 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-type Theme = 'light' | 'dark';
+export type Theme =
+  | 'light'
+  | 'dark'
+  | 'sakura'
+  | 'matcha'
+  | 'starry';
 
 interface ThemeContextType {
   theme: Theme;
@@ -18,25 +23,56 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as Theme | null;
+
     if (savedTheme) {
       setThemeState(savedTheme);
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setThemeState('dark');
+    } else {
+      setThemeState('light');
     }
+
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (mounted) {
-      const root = document.documentElement;
-      root.classList.remove('light', 'dark');
-      root.classList.add(theme);
-      localStorage.setItem('theme', theme);
+    if (!mounted) return;
+
+    const root = document.documentElement;
+
+    // Clear previous theme-related classes
+    root.classList.remove(
+      'light',
+      'dark',
+      'theme-sakura',
+      'theme-matcha',
+      'theme-starry',
+    );
+
+    // Derive base color mode (light / dark) from selected theme
+    const isDarkLike = theme === 'dark' || theme === 'starry';
+    const baseMode = isDarkLike ? 'dark' : 'light';
+
+    root.classList.add(baseMode);
+
+    // Add palette-specific class for non-default themes
+    if (theme === 'sakura') {
+      root.classList.add('theme-sakura');
+    } else if (theme === 'matcha') {
+      root.classList.add('theme-matcha');
+    } else if (theme === 'starry') {
+      root.classList.add('theme-starry');
     }
+
+    localStorage.setItem('theme', theme);
   }, [theme, mounted]);
 
   const toggleTheme = () => {
-    setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'));
+    setThemeState((prev) => {
+      const isCurrentlyDark =
+        prev === 'dark' || prev === 'starry';
+      return isCurrentlyDark ? 'light' : 'dark';
+    });
   };
 
   const setTheme = (newTheme: Theme) => {

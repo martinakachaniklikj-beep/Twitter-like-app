@@ -81,6 +81,24 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     client.leave(room);
   }
 
+  @SubscribeMessage('typing')
+  handleTyping(
+    client: Socket,
+    payload: { conversationId: string; isTyping: boolean },
+  ) {
+    const userId = this.getUserId(client);
+    if (!userId) return;
+    const { conversationId, isTyping } = payload;
+    if (!conversationId) return;
+
+    const room = `${CONVERSATION_ROOM_PREFIX}${conversationId}`;
+    client.to(room).emit('typing', {
+      conversationId,
+      userId,
+      isTyping: !!isTyping,
+    });
+  }
+
   @SubscribeMessage('message:send')
   async handleMessageSend(client: Socket, payload: { conversationId: string; content: string }) {
     const userId = this.getUserId(client);

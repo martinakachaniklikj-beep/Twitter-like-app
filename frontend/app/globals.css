@@ -11,8 +11,9 @@
   --secondary-foreground: oklch(0.208 0.042 265.755);
   --muted: oklch(0.968 0.007 247.896);
   --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
+  /* Soft, neutral accent for default light theme */
+  --accent: oklch(0.96 0.03 260);
+  --accent-foreground: oklch(0.24 0.04 260);
   --border: 203 213 225;
   --input: 203 213 225;
   --card: oklch(1 0 0);
@@ -37,42 +38,211 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: 203 213 225;
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  /* Kitty floating button theme tokens (light) */
+  --kitty-button-bg: #e5e7eb; /* neutral gray pill */
+  --kitty-button-fg: #111827; /* subtle dark icon */
+  /* Create post sidebar button theme tokens (light) */
+  --create-post-btn-bg: #000000;
+  --create-post-btn-fg: #ffffff;
 }
 
-/* Dark mode: background black, all other parts (text, borders, UI) white.
+/* Dark mode: high-contrast but softer, with slate/indigo accents.
    Use space-separated RGB so rgb(var(--x)) works in styled-components. */
 .dark {
-  --background: 0 0 0;
-  --foreground: 255 255 255;
-  --primary: 255 255 255;
-  --primary-foreground: 0 0 0;
-  --secondary: 240 240 240;
-  --secondary-foreground: 0 0 0;
-  --muted: 230 230 230;
-  --muted-foreground: 50 50 50;
-  --accent: 240 240 240;
-  --accent-foreground: 0 0 0;
-  --border: 220 220 220;
-  --input: 220 220 220;
-  --card: 0 0 0;
-  --card-foreground: 255 255 255;
-  --popover: 0 0 0;
-  --popover-foreground: 255 255 255;
-  --destructive: 239 68 68;
-  --ring: 255 255 255;
-  --chart-1: 255 255 255;
-  --chart-2: 240 240 240;
-  --chart-3: 230 230 230;
-  --chart-4: 220 220 220;
-  --chart-5: 210 210 210;
-  --sidebar: 0 0 0;
-  --sidebar-foreground: 255 255 255;
-  --sidebar-primary: 255 255 255;
-  --sidebar-primary-foreground: 0 0 0;
-  --sidebar-accent: 240 240 240;
-  --sidebar-accent-foreground: 0 0 0;
-  --sidebar-border: 220 220 220;
-  --sidebar-ring: 255 255 255;
+  --background: 15 23 42; /* slate-900 */
+  --foreground: 226 232 240; /* slate-200 */
+  --primary: 129 140 248; /* indigo-400 */
+  --primary-foreground: 15 23 42; /* slate-900 */
+  --secondary: 30 41 59; /* slate-800 */
+  --secondary-foreground: 226 232 240; /* slate-200 */
+  --muted: 30 41 59; /* slate-800 */
+  --muted-foreground: 148 163 184; /* slate-400 */
+  /* Softer, slate-tinted accent in dark mode to avoid harsh highlights */
+  --accent: 148 163 184; /* slate-400 */
+  --accent-foreground: 15 23 42;
+  --border: 51 65 85; /* slate-700 */
+  --input: 51 65 85;
+  --card: 15 23 42;
+  --card-foreground: 226 232 240;
+  --popover: 15 23 42;
+  --popover-foreground: 226 232 240;
+  --destructive: 248 113 113; /* red-400 */
+  --ring: 129 140 248; /* indigo-400 */
+  --chart-1: 56 189 248;
+  --chart-2: 129 140 248;
+  --chart-3: 52 211 153;
+  --chart-4: 251 191 36;
+  --chart-5: 248 113 113;
+  --sidebar: 15 23 42;
+  --sidebar-foreground: 226 232 240;
+  --sidebar-primary: 129 140 248;
+  --sidebar-primary-foreground: 15 23 42;
+  --sidebar-accent: 30 64 175; /* blue-800 */
+  --sidebar-accent-foreground: 226 232 240;
+  --sidebar-border: 51 65 85;
+  --sidebar-ring: 129 140 248;
+  /* Kitty floating button theme tokens (dark) */
+  --kitty-button-bg: #374151; /* slate gray bubble */
+  --kitty-button-fg: #e5e7eb; /* soft light icon */
+  /* Create post sidebar button theme tokens (dark) */
+  --create-post-btn-bg: #e5e7eb;
+  --create-post-btn-fg: #020617;
+  /* Repost action color (indigo accent, higher contrast) */
+  --repost: 129 140 248; /* indigo-400 */
+}
+
+/* Light-mode palette variants */
+
+/* Pink Sakura – soft blossom-inspired pastels */
+.theme-sakura {
+  --background: 255 247 250; /* rose-50 */
+  --foreground: 76 5 25; /* rose-900 */
+  --primary: 219 39 119; /* pink-600 – deeper, non-neon */
+  --primary-foreground: 255 247 250;
+  --secondary: 255 228 230; /* rose-100 */
+  --secondary-foreground: 76 5 25;
+  --muted: 254 242 242; /* rose-50/100 mix */
+  --muted-foreground: 159 18 57; /* rose-700 */
+  /* Like / accent color: gentle mid-pink so hearts stand out */
+  --accent: 236 72 153; /* pink-500 */
+  --accent-foreground: 255 247 250; /* light text on pink */
+  --border: 248 187 208; /* soft pink border */
+  --input: 248 187 208;
+  --card: 255 255 255;
+  --card-foreground: 76 5 25;
+  --popover: 255 255 255;
+  --popover-foreground: 76 5 25;
+  --destructive: 220 38 38;
+  --ring: 244 114 182; /* pink-400 */
+  --chart-1: 244 114 182;
+  --chart-2: 251 113 133;
+  --chart-3: 59 130 246;
+  --chart-4: 16 185 129;
+  --chart-5: 234 179 8;
+  --sidebar: 255 241 242;
+  --sidebar-foreground: 76 5 25;
+  --sidebar-primary: 219 39 119;
+  --sidebar-primary-foreground: 255 247 250;
+  --sidebar-accent: 254 226 226;
+  --sidebar-accent-foreground: 76 5 25;
+  --sidebar-border: 248 187 208;
+  --sidebar-ring: 244 114 182;
+  /* Kitty & create-post buttons */
+  --kitty-button-bg: #fce7f3; /* slightly deeper blossom */
+  --kitty-button-fg: #831843;
+  --create-post-btn-bg: #be185d; /* pink-700 button */
+  --create-post-btn-fg: #fdf2f8;
+  --repost: 244 114 182; /* align with accent */
+}
+
+/* Green Matcha – calm green, tea-inspired */
+.theme-matcha {
+  --background: 240 249 244; /* green-50 – soft pastel */
+  --foreground: 21 64 21; /* green-900 */
+  --primary: 21 128 61; /* green-700 – earthy matcha */
+  --primary-foreground: 247 254 231;
+  --secondary: 217 249 157; /* lime-200 */
+  --secondary-foreground: 21 64 21;
+  --muted: 236 252 203; /* lime-100 */
+  --muted-foreground: 54 83 20; /* lime-800 */
+  /* Like / accent color: calm emerald so hearts stand out */
+  --accent: 52 211 153; /* emerald-400 */
+  --accent-foreground: 240 253 244; /* very light text on emerald */
+  --border: 134 197 94; /* olive-toned, darker border */
+  --input: 209 250 229; /* emerald-100 input background */
+  --card: 240 249 244; /* match background so posts blend in */
+  --card-foreground: 21 64 21;
+  --popover: 255 255 255;
+  --popover-foreground: 21 64 21;
+  --destructive: 220 38 38;
+  --ring: 132 204 22;
+  --chart-1: 22 163 74;
+  --chart-2: 132 204 22;
+  --chart-3: 59 130 246;
+  --chart-4: 234 179 8;
+  --chart-5: 248 113 113;
+  --sidebar: 232 245 234; /* muted pastel sidebar */
+  --sidebar-foreground: 21 64 21;
+  --sidebar-primary: 21 128 61;
+  --sidebar-primary-foreground: 15 23 42;
+  --sidebar-accent: 217 249 157;
+  --sidebar-accent-foreground: 21 64 21;
+  --sidebar-border: 190 242 100;
+  --sidebar-ring: 132 204 22;
+  /* Kitty & create-post buttons */
+  --kitty-button-bg: #dcfce7; /* soft leafy green */
+  --kitty-button-fg: #14532d;
+  --create-post-btn-bg: #15803d; /* green-700 button */
+  --create-post-btn-fg: #ecfdf3;
+  --repost: 5 150 105; /* emerald accent */
+}
+
+/* Starry Night – deep navy with bright stars */
+.theme-starry {
+  --background: 10 18 40;
+  --foreground: 226 232 240;
+  --primary: 129 140 248; /* indigo-400 */
+  --primary-foreground: 15 23 42;
+  --secondary: 15 23 42; /* slate-900 */
+  --secondary-foreground: 226 232 240;
+  --muted: 30 41 59;
+  --muted-foreground: 148 163 184;
+  /* Softer starry accent (muted blue) */
+  --accent: 147 197 253; /* blue-300 */
+  --accent-foreground: 15 23 42;
+  --border: 30 64 175; /* blue-800 */
+  --input: 30 64 175;
+  --card: 15 23 42;
+  --card-foreground: 226 232 240;
+  --popover: 15 23 42;
+  --popover-foreground: 226 232 240;
+  --destructive: 248 113 113;
+  --ring: 129 140 248;
+  --chart-1: 250 250 115;
+  --chart-2: 129 140 248;
+  --chart-3: 56 189 248;
+  --chart-4: 52 211 153;
+  --chart-5: 244 114 182;
+  --sidebar: 15 23 42;
+  --sidebar-foreground: 226 232 240;
+  --sidebar-primary: 129 140 248;
+  --sidebar-primary-foreground: 15 23 42;
+  --sidebar-accent: 30 64 175;
+  --sidebar-accent-foreground: 226 232 240;
+  --sidebar-border: 30 64 175;
+  --sidebar-ring: 129 140 248;
+  /* Kitty & create-post buttons */
+  --kitty-button-bg: #020617;
+  --kitty-button-fg: #e5e7eb;
+  --create-post-btn-bg: #facc15;
+  --create-post-btn-fg: #0f172a;
+  --repost: 191 219 254; /* soft whitish blue */
+}
+
+/* Scrollbar styling – adapts to current theme tokens */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--muted-foreground), 0.55)
+    rgba(var(--background), 0.95);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(var(--background), 0.95);
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(var(--muted-foreground), 0.55);
+  border-radius: 999px;
+  border: 2px solid rgb(var(--background));
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(var(--muted-foreground), 0.85);
 }
 
 @theme inline {
@@ -135,5 +305,9 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: rgba(148, 163, 184, 0.45) !important;
   }
 }

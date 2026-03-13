@@ -1,4 +1,4 @@
-import { UserProfile, UpdateProfileForm, Post } from '../types';
+import { UserProfile, UpdateProfilePayload, Post } from '../types';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
 
@@ -19,7 +19,7 @@ export const profileServices = {
     return response.json();
   },
 
-  async updateProfile(token: string, data: UpdateProfileForm): Promise<UserProfile> {
+  async updateProfile(token: string, data: UpdateProfilePayload): Promise<UserProfile> {
     const response = await fetch(`${apiUrl}/users/profile`, {
       method: 'PATCH',
       headers: {

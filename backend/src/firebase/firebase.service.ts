@@ -5,13 +5,29 @@ import * as admin from 'firebase-admin';
 export class FirebaseService {
   constructor() {
     if (!admin.apps.length) {
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        }),
-      });
+      const projectId = process.env.FIREBASE_PROJECT_ID;
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+      const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+      if (projectId && clientEmail && rawPrivateKey) {
+        try {
+          admin.initializeApp({
+            credential: admin.credential.cert({
+              projectId,
+              clientEmail,
+              privateKey: rawPrivateKey.replace(/\\n/g, '\n'),
+            }),
+          });
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to initialize Firebase Admin SDK', error);
+        }
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn(
+          'Firebase Admin SDK not initialized: missing FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL or FIREBASE_PRIVATE_KEY environment variables.',
+        );
+      }
     }
   }
 
@@ -19,3 +35,4 @@ export class FirebaseService {
     return admin.auth().verifyIdToken(token);
   }
 }
+

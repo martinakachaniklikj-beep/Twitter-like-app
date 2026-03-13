@@ -2,9 +2,9 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 interface RequestWithUser extends Request {
   user: {
-    userId: string;
-    email: string;
-    username: string;
+    uid: string;
+    email?: string;
+    username?: string;
   };
 }
 

@@ -106,7 +106,21 @@ export default function SearchBar({ onUserSelect }: SearchBarProps) {
             results.map((user) => (
               <ResultItem key={user.id} onClick={() => handleUserClick(user)}>
                 <Avatar>
-                  <AvatarText>{user.username[0].toUpperCase()}</AvatarText>
+                  {user.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={user.avatarUrl}
+                      alt={user.username}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        borderRadius: '9999px',
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : (
+                    <AvatarText>{user.username[0].toUpperCase()}</AvatarText>
+                  )}
                 </Avatar>
                 <UserInfo>
                   <DisplayName>{user.displayName || user.username}</DisplayName>

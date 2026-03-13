@@ -1,76 +1,104 @@
-import { Avatar, AvatarImage } from "@/components/ui/avatar"
-import { MessageBubbleRow, MessageBubbleBubble } from "./chat.styles"
-import type { Message, ChatAttachment } from "./types"
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { MessageBubbleRow, MessageBubbleBubble, MessageBubbleAvatarWrap } from "./chat.styles";
+import type { MessageBubbleProps } from "./types";
+import { formatMessageTime } from "./utilities/utility";
+import {
+  MessageText,
+  AttachmentsWrap,
+  ImageAttachmentWrap,
+  ImageAttachment,
+  VideoAttachmentWrap,
+  VideoAttachment,
+  AudioAttachmentWrap,
+  AudioAttachment,
+  FileAttachmentWrap,
+  FilePlaceholder,
+  FileLink,
+  FileSize,
+  MetaRow,
+  MetaTime,
+  MetaStatus,
+  MetaSending,
+} from "./message-bubble.styled";
 
-interface MessageBubbleProps {
-  message: string
-  attachments?: ChatAttachment[]
-  avatar?: string
-  isOwn?: boolean
-  createdAt?: string
-  status?: Message["status"]
-}
-
-export function MessageBubble({ message, attachments, avatar, isOwn, createdAt, status }: MessageBubbleProps) {
-  const timeLabel =
-    createdAt ? new Date(createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : undefined
+export function MessageBubble({
+  message,
+  attachments,
+  avatar,
+  isOwn,
+  createdAt,
+  status,
+  theme,
+}: MessageBubbleProps) {
+  const timeLabel = formatMessageTime(createdAt);
 
   return (
     <MessageBubbleRow $isOwn={isOwn}>
       {!isOwn && (
-        <Avatar className="w-8 h-8">
-          <AvatarImage src={avatar} />
-        </Avatar>
+        <MessageBubbleAvatarWrap>
+          <Avatar style={{ width: "100%", height: "100%" }}>
+            <AvatarImage src={avatar} alt="" />
+          </Avatar>
+        </MessageBubbleAvatarWrap>
       )}
-      <MessageBubbleBubble $isOwn={isOwn}>
-        <div>{message}</div>
+      <MessageBubbleBubble $isOwn={isOwn} $theme={theme} $status={status}>
+        <MessageText>{message}</MessageText>
         {attachments && attachments.length > 0 && (
-          <div className="mt-2 space-y-2">
+          <AttachmentsWrap>
             {attachments.map((att) => {
               if (att.type.startsWith("image/")) {
                 return (
-                  <div key={att.url} className="max-w-xs">
-                    <img
-                      src={att.url}
-                      alt={att.name}
-                      className="rounded-md max-h-64 object-cover"
-                    />
-                  </div>
-                )
+                  <ImageAttachmentWrap key={att.url}>
+                    <ImageAttachment src={att.url} alt={att.name} />
+                  </ImageAttachmentWrap>
+                );
               }
               if (att.type.startsWith("video/")) {
                 return (
-                  <div key={att.url} className="max-w-xs">
-                    <video
-                      controls
-                      src={att.url}
-                      className="rounded-md max-h-64"
-                    />
-                  </div>
-                )
+                  <VideoAttachmentWrap key={att.url}>
+                    <VideoAttachment controls src={att.url} />
+                  </VideoAttachmentWrap>
+                );
+              }
+              if (att.type.startsWith("audio/")) {
+                return (
+                  <AudioAttachmentWrap key={att.url}>
+                    <AudioAttachment controls src={att.url} />
+                  </AudioAttachmentWrap>
+                );
               }
               return (
-                <div key={att.url}>
-                  <a
-                    href={att.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm underline break-all"
-                  >
-                    {att.name}
-                  </a>
-                </div>
-              )
+                <FileAttachmentWrap key={att.url}>
+                  <FilePlaceholder>
+                    {att.type === "application/pdf" ? "PDF" : "FILE"}
+                  </FilePlaceholder>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <FileLink href={att.url} target="_blank" rel="noopener noreferrer">
+                      {att.name}
+                    </FileLink>
+                    {typeof att.size === "number" && att.size > 0 && (
+                      <FileSize>{(att.size / (1024 * 1024)).toFixed(1)} MB</FileSize>
+                    )}
+                  </div>
+                </FileAttachmentWrap>
+              );
             })}
-          </div>
+          </AttachmentsWrap>
         )}
         {(timeLabel || status) && (
-          <div className="mt-1 text-[0.65rem] text-muted-foreground/80 text-right">
-            {timeLabel}
-            {status === "sending" && (timeLabel ? " · Sending..." : "Sending...")}
-          </div>
+          <MetaRow>
+            {timeLabel && <MetaTime>{timeLabel}</MetaTime>}
+            {status && isOwn && status !== "sending" && (
+              <MetaStatus $read={status === "read"}>
+                {status === "read" ? "Read" : "Sent"}
+              </MetaStatus>
+            )}
+            {status === "sending" && (
+              <MetaSending>{timeLabel ? "· Sending..." : "Sending..."}</MetaSending>
+            )}
+          </MetaRow>
         )}
       </MessageBubbleBubble>
     </MessageBubbleRow>
-  )
+  );
 }

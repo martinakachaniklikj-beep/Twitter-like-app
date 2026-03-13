@@ -10,7 +10,11 @@ export const FeedContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  padding: 1rem 1rem 1.5rem;
+  padding: 1rem 0.75rem 1.5rem;
+  max-width: 640px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 `;
 
 export const CreatePostCard = styled.div`
@@ -28,7 +32,7 @@ export const PostTextarea = styled.textarea`
   width: 100%;
   padding: 0.75rem 1rem;
   background: rgb(var(--background));
-  border: 1px solid rgb(var(--input));
+  border: 1px solid rgb(var(--border));
   border-radius: 0.5rem;
   color: rgb(var(--foreground));
   resize: none;
@@ -45,7 +49,7 @@ export const PostTextarea = styled.textarea`
 
 export const PostButtonContainer = styled.div`
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   margin-top: 0.75rem;
 `;
 
@@ -78,7 +82,7 @@ export const FeedTabsRow = styled.div`
 export const FeedTabButton = styled.button<{ $active?: boolean }>`
   flex: 1;
   padding: 1rem 0;
-  background: none;
+  background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
   font-size: 0.9375rem;
@@ -86,10 +90,16 @@ export const FeedTabButton = styled.button<{ $active?: boolean }>`
   color: rgb(var(--muted-foreground));
   cursor: pointer;
   position: relative;
-  transition: color 0.2s, border-color 0.2s, font-size 0.2s, font-weight 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    font-size 0.2s,
+    font-weight 0.2s,
+    background-color 0.2s;
 
   &:hover {
     color: rgb(var(--foreground));
+    background: rgba(var(--accent), 0.15);
   }
 
   ${({ $active }) =>
@@ -98,7 +108,8 @@ export const FeedTabButton = styled.button<{ $active?: boolean }>`
     color: rgb(var(--foreground));
     font-weight: 700;
     font-size: 1rem;
-    border-bottom-color: rgb(var(--foreground));
+    border-bottom-color: rgb(var(--accent));
+    background: rgba(var(--accent), 0.25);
   `}
 `;
 
@@ -146,14 +157,16 @@ export const EmptySubtext = styled.p`
 `;
 
 export const PostCard = styled.div`
-  background: rgb(var(--card));
+  background: rgb(var(--background));
   border: 1px solid rgb(var(--border));
-  border-radius: 0.5rem;
-  padding: 1rem;
-  transition: background-color 0.3s;
+  border-radius: 0.85rem;
+  padding: 0.9rem 1rem;
+  transition: background-color 0.3s, box-shadow 0.3s, transform 0.15s;
 
   &:hover {
-    background: rgba(var(--accent), 0.5);
+    background: rgba(var(--accent), 0.12);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.18);
+    transform: translateY(-1px);
   }
 `;
 
@@ -214,17 +227,35 @@ export const PostText = styled.p`
   margin-bottom: 0.75rem;
 `;
 
+export const PostMediaWrapper = styled.div`
+  margin-top: 0.6rem;
+  border-radius: 0.9rem;
+  overflow: hidden;
+`;
+
+export const PostMedia = styled.img`
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  background: rgb(var(--card));
+  display: block;
+`;
+
 export const PostActions = styled.div`
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  justify-content: space-between;
+  gap: 0.5rem;
   color: rgb(var(--muted-foreground));
+  margin-top: 1rem;
 `;
 
 export const PostActionButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex: 1;
+  justify-content: center;
   background: none;
   border: none;
   cursor: pointer;
@@ -246,21 +277,23 @@ export const ModalOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1300;
 `;
 
 export const ModalContent = styled.div`
-  background: rgb(var(--card));
+  background: #ffffff;
   border-radius: 1rem;
   padding: 1.5rem;
   max-width: 500px;
   width: 90%;
   max-height: 80vh;
   overflow: auto;
+  position: relative;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
 `;
 
 export const ModalHeader = styled.div`
@@ -289,16 +322,16 @@ export const ModalCloseButton = styled.button`
   transition: background-color 0.2s;
 
   &:hover {
-    background: rgb(var(--accent));
+    background: rgba(var(--muted-foreground), 0.1);
   }
 `;
 
 export const OriginalPostCard = styled.div`
   margin-bottom: 1rem;
   padding: 1rem;
-  background: rgb(var(--accent));
+  background: rgba(var(--repost), 0.16);
   border-radius: 0.5rem;
-  border: 1px solid rgb(var(--border));
+  border: 1px solid rgba(var(--repost), 0.4);
 `;
 
 export const OriginalPostHeader = styled.div`
@@ -320,8 +353,9 @@ export const OriginalPostContent = styled.div`
 `;
 
 export const CommentsSection = styled.div`
-  margin-bottom: 1rem;
-  max-height: 200px;
+  margin-bottom: 1.25rem;
+  max-height: 260px;
+  padding-right: 0.25rem;
   overflow-y: auto;
 `;
 
@@ -329,15 +363,16 @@ export const CommentsSectionTitle = styled.h4`
   font-size: 1rem;
   margin-bottom: 0.75rem;
   font-weight: 600;
-  color: rgb(var(--foreground));
+  color: #111827;
 `;
 
 export const CommentItem = styled.div`
+  /* Single unified comment style across all themes (fixed gray palette) */
   padding: 0.75rem;
   margin-bottom: 0.5rem;
-  background: rgb(var(--accent));
-  border-radius: 0.5rem;
-  border: 1px solid rgb(var(--border));
+  background:rgb(39, 45, 58); /* gray-200 */
+  border-radius: 0.75rem;
+  border: 1px solidrgb(75, 87, 106); /* gray-300 */
 `;
 
 export const CommentHeader = styled.div`
@@ -346,27 +381,51 @@ export const CommentHeader = styled.div`
 `;
 
 export const CommentAuthor = styled.strong`
-  color: rgb(var(--foreground));
+  color: #111827; /* gray-900 */
 `;
 
 export const CommentUsername = styled.span`
-  color: rgb(var(--muted-foreground));
+  color: #4b5563; /* gray-600 */
   margin-left: 0.25rem;
 `;
 
 export const CommentDate = styled.span`
-  color: rgb(var(--muted-foreground));
+  color: #9ca3af; /* gray-400 */
   margin-left: 0.5rem;
   font-size: 0.75rem;
 `;
 
 export const CommentContent = styled.div`
   font-size: 0.875rem;
-  color: rgb(var(--foreground));
+  color: #111827; /* gray-900 */
 `;
 
 export const CommentInputContainer = styled.div`
   margin-top: 1rem;
   display: flex;
   justify-content: flex-end;
+`;
+
+export const GifPickerWrapper = styled.div`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+`;
+
+export const GifDropdown = styled.div`
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1400;
+  background-color: #ffffff;
+  opacity: 1;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(var(--border));
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  padding: 1rem;
+  width: min(360px, 90vw);
+  max-height: min(420px, 80vh);
+  display: flex;
+  flex-direction: column;
 `;

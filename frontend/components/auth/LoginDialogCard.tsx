@@ -24,7 +24,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import type { LoginFormData, LoginDialogCardProps } from './types';
+import type { LoginFormData, LoginDialogCardProps } from './types/types';
 
 export function LoginDialogCard({ onSuccess }: LoginDialogCardProps) {
   const [error, setError] = useState('');

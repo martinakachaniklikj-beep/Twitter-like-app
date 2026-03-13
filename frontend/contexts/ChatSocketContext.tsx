@@ -12,6 +12,7 @@ import {
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import type { ApiMessage } from '@/services/chatServices';
+import type { ApiNotification } from '@/services/notificationServices';
 
 const socketUrl =
   typeof window !== 'undefined'
@@ -27,6 +28,9 @@ interface ChatSocketContextType {
     content: string,
   ) => Promise<{ ok?: boolean; error?: string; message?: ApiMessage }>;
   onMessageNew: (cb: (message: ApiMessage) => void) => () => void;
+  onNotificationNew: (cb: (notification: ApiNotification) => void) => () => void;
+  emitTyping: (conversationId: string, isTyping: boolean) => void;
+  onTyping: (cb: (data: { conversationId: string; userId: string; isTyping: boolean }) => void) => () => void;
 }
 
 const ChatSocketContext = createContext<ChatSocketContextType | null>(null);
@@ -36,6 +40,10 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const listenersRef = useRef<Set<(message: ApiMessage) => void>>(new Set());
+  const notificationListenersRef = useRef<Set<(notification: ApiNotification) => void>>(new Set());
+  const typingListenersRef = useRef<
+    Set<(data: { conversationId: string; userId: string; isTyping: boolean }) => void>
+  >(new Set());
 
   useEffect(() => {
     if (!isAuthenticated || !user || !socketUrl) return;
@@ -52,6 +60,12 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
       socket.on('disconnect', () => setIsConnected(false));
       socket.on('message:new', (message: ApiMessage) => {
         listenersRef.current.forEach((cb) => cb(message));
+      });
+      socket.on('notification:new', (notification: ApiNotification) => {
+        notificationListenersRef.current.forEach((cb) => cb(notification));
+      });
+      socket.on('typing', (data: { conversationId: string; userId: string; isTyping: boolean }) => {
+        typingListenersRef.current.forEach((cb) => cb(data));
       });
 
       socketRef.current = socket;
@@ -99,12 +113,37 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const onNotificationNew = useCallback((cb: (notification: ApiNotification) => void) => {
+    notificationListenersRef.current.add(cb);
+    return () => {
+      notificationListenersRef.current.delete(cb);
+    };
+  }, []);
+
+  const emitTyping = useCallback((conversationId: string, isTyping: boolean) => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('typing', { conversationId, isTyping });
+  }, []);
+
+  const onTyping = useCallback(
+    (cb: (data: { conversationId: string; userId: string; isTyping: boolean }) => void) => {
+      typingListenersRef.current.add(cb);
+      return () => {
+        typingListenersRef.current.delete(cb);
+      };
+    },
+    [],
+  );
+
   const value: ChatSocketContextType = {
     isConnected,
     joinConversation,
     leaveConversation,
     sendMessage,
     onMessageNew,
+    onNotificationNew,
+    emitTyping,
+    onTyping,
   };
 
   return (

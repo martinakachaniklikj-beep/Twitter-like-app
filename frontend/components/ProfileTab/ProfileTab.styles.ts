@@ -1,6 +1,9 @@
 import styled from 'styled-components';
 
 export const Container = styled.div`
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -123,6 +126,30 @@ export const Textarea = styled.textarea`
   &:focus {
     outline: none;
     ring: 2px solid rgb(var(--primary));
+  }
+`;
+
+export const SuggestionsList = styled.ul`
+  margin-top: 0.25rem;
+  max-height: 10rem;
+  overflow-y: auto;
+  background: rgb(var(--background));
+  border-radius: 0.5rem;
+  border: 1px solid rgb(var(--border));
+  list-style: none;
+  padding: 0.25rem 0;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  z-index: 10;
+`;
+
+export const SuggestionItem = styled.li`
+  padding: 0.35rem 0.75rem;
+  font-size: 0.875rem;
+  color: rgb(var(--foreground));
+  cursor: pointer;
+
+  &:hover {
+    background: rgb(var(--accent));
   }
 `;
 

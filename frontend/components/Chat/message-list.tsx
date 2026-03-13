@@ -1,7 +1,14 @@
-import { useEffect, useMemo, useRef } from "react"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import type { Message } from "./types"
-import { MessageBubble } from "./message-bubble"
+import { useEffect, useMemo, useRef } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import type { Message, MessageListProps } from "./types";
+import { MessageBubble } from "./message-bubble";
+import {
+  ScrollAreaWrap,
+  LoadingState,
+  LoadingMore,
+  MessagesInner,
+  SystemMessage,
+} from "./message-list.styled";
 
 export function MessageList({
   messages,
@@ -9,58 +16,72 @@ export function MessageList({
   currentUserId,
   loading,
   loadingMore,
-}: {
-  messages: Message[]
-  onLoadMore: () => void
-  currentUserId?: string
-  loading?: boolean
-  loadingMore?: boolean
-}) {
-  const bottomRef = useRef<HTMLDivElement | null>(null)
+  otherAvatarUrl,
+  theme,
+  onUserInteraction,
+}: MessageListProps) {
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const uniqueMessages = useMemo(() => {
-    const seen = new Set<string>()
-    return messages.filter((m) => {
-      if (seen.has(m.id)) return false
-      seen.add(m.id)
-      return true
-    })
-  }, [messages])
+    const seen = new Set<string>();
+    return messages.filter((m: Message) => {
+      if (seen.has(m.id)) return false;
+      seen.add(m.id);
+      return true;
+    });
+  }, [messages]);
 
   useEffect(() => {
     if (!loading && bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: "smooth", block: "end" })
+      bottomRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
-  }, [uniqueMessages.length, loading])
+  }, [uniqueMessages.length, loading]);
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center text-muted-foreground p-4">
+      <LoadingState>
         Loading messages...
-      </div>
-    )
+      </LoadingState>
+    );
   }
 
   return (
-    <ScrollArea className="flex-1 min-h-0">
+    <ScrollAreaWrap>
+      <ScrollArea
+        style={{ flex: 1, minHeight: 0 }}
+        onClick={onUserInteraction}
+        onWheelCapture={onUserInteraction}
+        onTouchMove={onUserInteraction}
+      >
       {loadingMore && (
-        <div className="p-2 text-center text-sm text-muted-foreground">
-          Loading older messages...
-        </div>
+        <LoadingMore>Loading older messages...</LoadingMore>
       )}
-      <div className="flex flex-col gap-4 p-4">
-        {uniqueMessages.map((msg) => (
-          <MessageBubble
-            key={msg.id}
-            message={msg.text}
-            attachments={msg.attachments}
-            createdAt={msg.createdAt}
-            status={msg.status}
-            isOwn={currentUserId ? msg.senderId === currentUserId : undefined}
-          />
-        ))}
+      <MessagesInner>
+        {uniqueMessages.map((msg) => {
+          if (msg.text.startsWith("SYSTEM:USER_JOINED|")) {
+            const name = msg.text.split("|")[1] || "Someone";
+            return (
+              <SystemMessage key={msg.id}>
+                {name} joined the chat
+              </SystemMessage>
+            );
+          }
+          return (
+            <MessageBubble
+              key={msg.id}
+              message={msg.text}
+              attachments={msg.attachments}
+              createdAt={msg.createdAt}
+              status={msg.status}
+              isOwn={currentUserId ? msg.senderId === currentUserId : undefined}
+              avatar={otherAvatarUrl}
+              theme={theme}
+            />
+          );
+        })}
         <div ref={bottomRef} />
-      </div>
-    </ScrollArea>
-  )
+      </MessagesInner>
+      </ScrollArea>
+    </ScrollAreaWrap>
+  );
 }

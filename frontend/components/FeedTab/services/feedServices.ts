@@ -15,14 +15,24 @@ export const feedServices = {
     return response.json();
   },
 
-  async createPost(token: string, content: string, imageUrl?: string, gifUrl?: string) {
+  async createPost(
+    token: string,
+    content: string,
+    imageUrl?: string,
+    gifUrl?: string,
+    poll?: {
+      question?: string;
+      options: string[];
+      expiresAt: string;
+    },
+  ) {
     const response = await fetch(`${apiUrl}/posts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ content, imageUrl, gifUrl }),
+      body: JSON.stringify({ content, imageUrl, gifUrl, poll }),
     });
     if (!response.ok) throw new Error('Failed to create post');
     return response.json();
@@ -67,12 +77,33 @@ export const feedServices = {
     return response.json();
   },
 
+  async fetchMentionSuggestions(token: string, query: string) {
+    const params = new URLSearchParams();
+    if (query) {
+      params.set('q', query);
+    }
+    const response = await fetch(`${apiUrl}/users/mentions?${params.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to load mention suggestions');
+    }
+    return response.json();
+  },
+
   async repostPost(
     token: string,
     postId: string,
     content?: string,
     imageUrl?: string,
     gifUrl?: string,
+    poll?: {
+      question?: string;
+      options: string[];
+      expiresAt: string;
+    },
   ) {
     const response = await fetch(`${apiUrl}/posts`, {
       method: 'POST',
@@ -80,7 +111,7 @@ export const feedServices = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ originalPostId: postId, content, imageUrl, gifUrl }),
+      body: JSON.stringify({ originalPostId: postId, content, imageUrl, gifUrl, poll }),
     });
     if (!response.ok) throw new Error('Failed to repost');
     return response.json();
@@ -92,5 +123,96 @@ export const feedServices = {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) throw new Error('Failed to unrepost');
+  },
+
+  async deletePost(token: string, postId: string) {
+    const response = await fetch(`${apiUrl}/posts/${postId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error('Failed to delete post');
+    return response.json();
+  },
+
+  async toggleSavedPost(token: string, postId: string, collectionName?: string) {
+    const response = await fetch(`${apiUrl}/saved-posts/${postId}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(collectionName ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: collectionName ? JSON.stringify({ collectionName }) : undefined,
+    });
+    if (!response.ok) {
+      throw new Error('Failed to toggle saved post');
+    }
+    return response.json() as Promise<{ saved: boolean }>;
+  },
+
+  async fetchSavedPosts(token: string) {
+    const response = await fetch(`${apiUrl}/saved-posts/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to load saved posts');
+    }
+    return response.json();
+  },
+
+  async fetchSavedCollections(token: string) {
+    const response = await fetch(`${apiUrl}/saved-posts/collections`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to load saved collections');
+    }
+    return response.json();
+  },
+
+  async renameSavedCollection(token: string, id: string, name: string) {
+    const response = await fetch(`${apiUrl}/saved-posts/collections/${id}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name }),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to rename collection');
+    }
+    return response.json() as Promise<{ id: string; name: string }>;
+  },
+
+  async deleteSavedCollection(token: string, id: string) {
+    const response = await fetch(`${apiUrl}/saved-posts/collections/${id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete collection');
+    }
+    return response.json() as Promise<{ success: boolean }>;
+  },
+
+  async voteOnPoll(token: string, postId: string, optionId: string) {
+    const response = await fetch(`${apiUrl}/posts/${postId}/poll/vote`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ optionId }),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to vote on poll');
+    }
+    return response.json();
   },
 };

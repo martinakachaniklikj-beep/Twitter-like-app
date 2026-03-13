@@ -13,22 +13,36 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model User {
-  id          String    @id
-  email       String    @unique
-  username    String    @unique
+  id          String   @id
+  email       String   @unique
+  username    String   @unique
   displayName String?
   bio         String?
   avatarUrl   String?
+  coverUrl    String?
+  country     String?
+  fcmToken    String?
+  birthDate   DateTime?
 
-  posts                Post[]
-  likes                Like[]
-  comments             Comment[]
-  following            Follow[] @relation("UserFollowing")
-  followers            Follow[] @relation("UserFollowers")
+  posts                    Post[]
+  likes                    Like[]
+  comments                 Comment[]
+  following                Follow[]                  @relation("UserFollowing")
+  followers                Follow[]                  @relation("UserFollowers")
   conversationParticipants ConversationParticipant[]
-  sentMessages         Message[]
+  sentMessages             Message[]
+  notifications            Notification[]
+  searchHistory            SearchHistory[]
+  savedPosts               SavedPost[]
+  savedCollections         SavedCollection[]
+  groupInvitesSent         GroupInvite[]       @relation("GroupInviteInviter")
+  groupInvitesReceived     GroupInvite[]       @relation("GroupInviteInvitee")
+
+  blockedUsers Block[] @relation("UserBlocked")
+  blockedBy    Block[] @relation("UserBlockedBy")
+
+  pollVotes PollVote[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -37,14 +51,14 @@ model User {
 }
 
 model Post {
-  id             String    @id @default(uuid()) @db.Uuid
-  content        String?
-  imageUrl       String?
-  gifUrl         String?
-  createdAt      DateTime  @default(now())
+  id        String   @id @default(uuid()) @db.Uuid
+  content   String?
+  imageUrl  String?
+  gifUrl    String?
+  createdAt DateTime @default(now())
 
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId         String    
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
 
   likes          Like[]
   comments       Comment[]
@@ -52,7 +66,75 @@ model Post {
   originalPost   Post?     @relation("PostReposts", fields: [originalPostId], references: [id])
   originalPostId String?   @db.Uuid
 
+  hashtags   PostHashtag[]
+  savedBy    SavedPost[]
+  poll       Poll?
+
   @@map("posts")
+}
+
+model Poll {
+  id        String   @id @default(uuid()) @db.Uuid
+  question  String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String @unique @db.Uuid
+
+  options PollOption[]
+  votes   PollVote[]
+
+  @@map("polls")
+}
+
+model PollOption {
+  id        String   @id @default(uuid()) @db.Uuid
+  text      String
+  createdAt DateTime @default(now())
+
+  poll   Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  pollId String @db.Uuid
+
+  votes PollVote[]
+
+  @@map("poll_options")
+}
+
+model PollVote {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now())
+
+  poll      Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  pollId    String     @db.Uuid
+  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  optionId  String     @db.Uuid
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  @@unique([pollId, userId])
+  @@map("poll_votes")
+}
+
+model Hashtag {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  posts PostHashtag[]
+
+  @@map("hashtags")
+}
+
+model PostHashtag {
+  postId    String @db.Uuid
+  hashtagId String @db.Uuid
+
+  post    Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtag Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, hashtagId])
+  @@map("post_hashtags")
 }
 
 model Comment {
@@ -60,10 +142,10 @@ model Comment {
   content   String
   createdAt DateTime @default(now())
 
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String 
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
 
-  post   Post  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId String @db.Uuid
 
   @@map("comments")
@@ -73,14 +155,44 @@ model Like {
   id        String   @id @default(uuid()) @db.Uuid
   createdAt DateTime @default(now())
 
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String 
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
 
-  post   Post  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId String @db.Uuid
 
   @@unique([userId, postId])
   @@map("likes")
+}
+
+model SavedPost {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String @db.Uuid
+
+  collection   SavedCollection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  collectionId String?          @db.Uuid
+
+  @@map("saved_posts")
+}
+
+model SavedCollection {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  savedPosts SavedPost[]
+
+  @@unique([userId, name])
+  @@map("saved_collections")
 }
 
 model Follow {
@@ -88,10 +200,10 @@ model Follow {
   createdAt DateTime @default(now())
 
   follower   User   @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
-  followerId String 
+  followerId String
 
   following   User   @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
-  followingId String 
+  followingId String
 
   @@unique([followerId, followingId])
   @@map("follows")
@@ -105,15 +217,16 @@ model Conversation {
 
   participants ConversationParticipant[]
   messages     Message[]
+  groupInvites GroupInvite[]
 
   @@map("conversations")
 }
 
 model ConversationParticipant {
-  id             String   @id @default(uuid()) @db.Uuid
-  conversationId String   @db.Uuid
+  id             String    @id @default(uuid()) @db.Uuid
+  conversationId String    @db.Uuid
   userId         String
-  joinedAt       DateTime @default(now())
+  joinedAt       DateTime  @default(now())
   lastReadAt     DateTime?
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -121,6 +234,23 @@ model ConversationParticipant {
 
   @@unique([conversationId, userId])
   @@map("conversation_participants")
+}
+
+model GroupInvite {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @db.Uuid
+  inviterId      String
+  inviteeId      String
+  status         String   @default("pending") // 'pending' | 'accepted' | 'declined'
+  createdAt      DateTime @default(now())
+  respondedAt    DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  inviter      User         @relation("GroupInviteInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee      User         @relation("GroupInviteInvitee", fields: [inviteeId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, inviteeId])
+  @@map("group_invites")
 }
 
 model Message {
@@ -135,4 +265,44 @@ model Message {
   sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
   @@map("messages")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  type      String   // e.g. 'like' | 'comment' | 'follow' | 'system'
+  message   String
+  createdAt DateTime @default(now())
+  readAt    DateTime?
+
+  @@map("notifications")
+}
+
+model SearchHistory {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String
+  query     String
+  targetId  String?
+  type      String   // 'user' | 'hashtag' | 'post'
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("search_history")
+}
+
+model Block {
+  id        String   @id @default(uuid()) @db.Uuid
+  blocker   User     @relation("UserBlocked", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockerId String
+
+  blocked   User     @relation("UserBlockedBy", fields: [blockedId], references: [id], onDelete: Cascade)
+  blockedId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@map("blocks")
 }

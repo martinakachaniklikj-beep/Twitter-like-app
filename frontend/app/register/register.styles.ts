@@ -1,151 +1,91 @@
-import styled from 'styled-components';
+import styled from "styled-components";
 
-export const RegisterLabels = {
-  title: 'Create Account',
-  subtitle: 'Join Twitter today',
-  usernameLabel: 'Username',
-  usernamePlaceholder: 'johndoe',
-  emailLabel: 'Email',
-  emailPlaceholder: 'you@example.com',
-  passwordLabel: 'Password',
-  passwordPlaceholder: '••••••••',
-  confirmPasswordLabel: 'Confirm Password',
-  confirmPasswordPlaceholder: '••••••••',
-  submitButton: 'Sign Up',
-  submittingButton: 'Creating account...',
-  haveAccount: 'Already have an account? ',
-  signInLink: 'Sign in',
-} as const;
-
-export const Container = styled.div`
-  min-height: 100vh;
-  background: rgb(var(--background));
+export const PageWrapper = styled.div`
+  position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 1rem;
+  min-height: 100vh;
+  flex-direction: column;
+  background: rgb(var(--background));
+  color: rgb(var(--foreground));
 `;
 
 export const ThemeToggleWrapper = styled.div`
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  right: 1.5rem;
+  top: 1.5rem;
+  z-index: 10;
 `;
 
-export const CardWrapper = styled.div`
+export const ContentContainer = styled.div`
+  margin: 0 auto;
+  display: flex;
   width: 100%;
-  max-width: 28rem;
-`;
+  max-width: 72rem;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+  padding: 2.5rem 1.5rem;
 
-export const Card = styled.div`
-  background: rgb(var(--card));
-  border: 1px solid rgb(var(--border));
-  border-radius: 0.5rem;
-  padding: 2rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-`;
-
-export const Title = styled.h1`
-  font-size: 1.875rem;
-  font-weight: bold;
-  text-align: center;
-  margin-bottom: 0.5rem;
-  color: rgb(var(--foreground));
-`;
-
-export const Subtitle = styled.p`
-  text-align: center;
-  color: rgb(var(--muted-foreground));
-  margin-bottom: 1.5rem;
-`;
-
-export const ErrorBox = styled.div`
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: rgb(220, 38, 38);
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-
-  .dark & {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.8);
-    color: rgb(252, 165, 165);
+  @media (min-width: 768px) {
+    flex-direction: row;
   }
 `;
 
-export const Form = styled.form`
+export const ImageSection = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  width: 100%;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
 `;
 
-export const InputGroup = styled.div`
+export const ImagePlaceholder = styled.div`
+  display: flex;
+  height: 16rem;
+  width: 100%;
+  max-width: 28rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  border: 1px dashed rgb(var(--border));
+  background: rgba(var(--muted), 0.4);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgb(var(--muted-foreground));
+`;
+
+export const AuthSection = styled.div`
+  width: 100%;
+  max-width: 28rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+
+export const HeadingBlock = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 `;
 
-export const Label = styled.label`
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: rgb(var(--foreground));
-`;
+export const Heading = styled.h1`
+  font-size: 1.875rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 
-export const Input = styled.input`
-  width: 100%;
-  padding: 0.5rem 1rem;
-  background: rgb(var(--background));
-  border: 1px solid rgb(var(--input));
-  border-radius: 0.5rem;
-  color: rgb(var(--foreground));
-  
-  &:focus {
-    outline: none;
-    ring: 2px;
-    ring-color: rgb(var(--primary));
+  @media (min-width: 640px) {
+    font-size: 2.25rem;
+  }
+
+  @media (min-width: 768px) {
+    font-size: 3rem;
   }
 `;
 
-export const SubmitButton = styled.button`
-  width: 100%;
-  padding: 0.5rem 1rem;
-  background: rgb(var(--primary));
-  color: rgb(var(--primary-foreground));
-  border-radius: 0.5rem;
-  border: none;
+export const SubHeading = styled.p`
+  font-size: 1.125rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.3s;
-
-  &:hover {
-    opacity: 0.9;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
-
-export const Footer = styled.div`
-  margin-top: 1.5rem;
-  text-align: center;
-  font-size: 0.875rem;
-`;
-
-export const FooterText = styled.span`
   color: rgb(var(--muted-foreground));
-`;
-
-export const FooterLink = styled.a`
-  color: rgb(var(--primary));
-  font-weight: 500;
-  text-decoration: none;
-  
-  &:hover {
-    text-decoration: underline;
-  }
 `;

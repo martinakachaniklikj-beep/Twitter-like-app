@@ -1,147 +1,72 @@
-import styled from 'styled-components';
+'use client';
 
-export const LoginLabels = {
-  title: 'Welcome Back',
-  subtitle: 'Sign in to your account',
-  emailLabel: 'Email',
-  emailPlaceholder: 'you@example.com',
-  passwordLabel: 'Password',
-  passwordPlaceholder: '••••••••',
-  submitButton: 'Sign In',
-  submittingButton: 'Signing in...',
-  noAccount: "Don't have an account? ",
-  signUpLink: 'Sign up',
-} as const;
+import styled from "styled-components";
 
-export const Container = styled.div`
-  min-height: 100vh;
-  background: rgb(var(--background));
+export const PageWrapper = styled.div`
+  position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 1rem;
+  min-height: 100vh;
+  flex-direction: column;
+  background: var(--background);
+  color: var(--foreground);
 `;
 
 export const ThemeToggleWrapper = styled.div`
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  right: 1.5rem;
+  top: 1.5rem;
+  z-index: 10;
 `;
 
-export const CardWrapper = styled.div`
+export const ContentContainer = styled.div`
+  margin: 0 auto;
+  display: flex;
   width: 100%;
-  max-width: 28rem;
-`;
+  max-width: 72rem;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+  padding: 2.5rem 1.5rem;
 
-export const Card = styled.div`
-  background: rgb(var(--card));
-  border: 1px solid rgb(var(--border));
-  border-radius: 0.5rem;
-  padding: 2rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-`;
-
-export const Title = styled.h1`
-  font-size: 1.875rem;
-  font-weight: bold;
-  text-align: center;
-  margin-bottom: 0.5rem;
-  color: rgb(var(--foreground));
-`;
-
-export const Subtitle = styled.p`
-  text-align: center;
-  color: rgb(var(--muted-foreground));
-  margin-bottom: 1.5rem;
-`;
-
-export const ErrorBox = styled.div`
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: rgb(220, 38, 38);
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-
-  .dark & {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.8);
-    color: rgb(252, 165, 165);
+  @media (min-width: 768px) {
+    flex-direction: row;
   }
 `;
 
-export const Form = styled.form`
+export const BrandingSection = styled.div`
+  display: flex;
+  width: 100%;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+`;
+
+export const BrandingText = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1rem;
 `;
 
-export const InputGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
+export const Heading = styled.h1`
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 
-export const Label = styled.label`
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: rgb(var(--foreground));
-`;
-
-export const Input = styled.input`
-  width: 100%;
-  padding: 0.5rem 1rem;
-  background: rgb(var(--background));
-  border: 1px solid rgb(var(--input));
-  border-radius: 0.5rem;
-  color: rgb(var(--foreground));
-  
-  &:focus {
-    outline: none;
-    ring: 2px;
-    ring-color: rgb(var(--primary));
+  @media (min-width: 768px) {
+    font-size: 3.75rem;
   }
 `;
 
-export const SubmitButton = styled.button`
-  width: 100%;
-  padding: 0.5rem 1rem;
-  background: rgb(var(--primary));
-  color: rgb(var(--primary-foreground));
-  border-radius: 0.5rem;
-  border: none;
+export const SubHeading = styled.p`
+  font-size: 1.25rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.3s;
-
-  &:hover {
-    opacity: 0.9;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  color: var(--muted-foreground);
 `;
 
-export const Footer = styled.div`
-  margin-top: 1.5rem;
-  text-align: center;
-  font-size: 0.875rem;
-`;
-
-export const FooterText = styled.span`
-  color: rgb(var(--muted-foreground));
-`;
-
-export const FooterLink = styled.a`
-  color: rgb(var(--primary));
-  font-weight: 500;
-  text-decoration: none;
-  
-  &:hover {
-    text-decoration: underline;
-  }
+export const AuthCardWrapper = styled.div`
+  width: 100%;
+  max-width: 28rem;
 `;

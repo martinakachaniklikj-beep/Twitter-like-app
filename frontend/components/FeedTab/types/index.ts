@@ -22,6 +22,34 @@ export interface Post {
   originalPostContent?: string;
   originalPostImageUrl?: string;
   originalPostGifUrl?: string;
+  originalPostPoll?: {
+    id: string;
+    question?: string;
+    expiresAt: string;
+    isActive: boolean;
+    totalVotes: number;
+    options: {
+      id: string;
+      text: string;
+      votesCount: number;
+    }[];
+    currentUserVoteOptionId?: string;
+  } | null;
+  collectionName?: string | null;
+  hashtags?: string[];
+  poll?: {
+    id: string;
+    question?: string;
+    expiresAt: string;
+    isActive: boolean;
+    totalVotes: number;
+    options: {
+      id: string;
+      text: string;
+      votesCount: number;
+    }[];
+    currentUserVoteOptionId?: string;
+  } | null;
 }
 
 export interface Comment {
@@ -41,4 +69,10 @@ export interface CreatePostForm {
   content: string;
   imageUrl?: string;
   gifUrl?: string;
+  pollQuestion?: string;
+  pollOption1?: string;
+  pollOption2?: string;
+  pollOption3?: string;
+  pollOption4?: string;
+  pollDurationMinutes?: number;
 }

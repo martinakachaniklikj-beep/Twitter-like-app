@@ -1,7 +1,7 @@
-import { initializeApp } from "firebase/app";
-// import { getAnalytics } from "firebase/analytics";
-import { getStorage } from "firebase/storage";
-import { getAuth } from "firebase/auth";
+import { initializeApp } from 'firebase/app';
+import { getStorage } from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
+import { getMessaging, isSupported, type Messaging } from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -16,4 +16,25 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
-// const analytics = getAnalytics(app);
+
+let cachedMessaging: Messaging | null = null;
+
+export const getMessagingSafely = async (): Promise<Messaging | null> => {
+  if (cachedMessaging) return cachedMessaging;
+
+  if (
+    typeof window === 'undefined' ||
+    typeof navigator === 'undefined' ||
+    !('serviceWorker' in navigator)
+  ) {
+    return null;
+  }
+
+  const supported = await isSupported().catch(() => false);
+  if (!supported) {
+    return null;
+  }
+
+  cachedMessaging = getMessaging(app);
+  return cachedMessaging;
+};

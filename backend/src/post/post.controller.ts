@@ -8,6 +8,7 @@ import {
   UseGuards,
   Req,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { PostService } from './post.service';
@@ -31,6 +32,11 @@ export class PostController {
       imageUrl?: string;
       gifUrl?: string;
       originalPostId?: string;
+      poll?: {
+        question?: string;
+        options: string[];
+        expiresAt: string;
+      };
     },
   ) {
     return this.postService.create(req.user.uid, dto);
@@ -62,6 +68,19 @@ export class PostController {
     return this.postService.getFeed(req.user.uid, pageNum, limitNum, feedType);
   }
 
+  @Get('by-hashtag/:name')
+  getByHashtag(
+    @Req() req: AuthRequest,
+    @Param('name') name: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = parseInt(page || '1', 10);
+    const limitNum = parseInt(limit || '10', 10);
+
+    return this.postService.getByHashtag(name, pageNum, limitNum, req.user.uid);
+  }
+
   @Get('user/:username')
   findByUser(@Param('username') username: string) {
     return this.postService.findByUser(username);
@@ -75,5 +94,17 @@ export class PostController {
   @Delete(':id')
   remove(@Req() req: AuthRequest, @Param('id') id: string) {
     return this.postService.remove(id, req.user.uid);
+  }
+
+  @Post(':id/poll/vote')
+  voteOnPoll(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Body() body: { optionId: string },
+  ) {
+    if (!body?.optionId) {
+      throw new BadRequestException('optionId is required');
+    }
+    return this.postService.voteOnPoll(id, req.user.uid, body.optionId);
   }
 }

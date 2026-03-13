@@ -30,8 +30,20 @@ export class UsersController {
   ) {}
 
   @Get('search')
-  search(@Query('q') query: string) {
-    return this.usersService.search(query);
+  search(@Req() req: AuthRequest, @Query('q') query: string) {
+    return this.usersService.search(req.user.uid, query);
+  }
+
+  @Get('mentions')
+  getMentionSuggestions(@Req() req: AuthRequest, @Query('q') query?: string): Promise<
+    {
+      id: string;
+      username: string;
+      displayName?: string;
+      avatarUrl?: string | null;
+    }[]
+  > {
+    return this.usersService.getMutualFollowersForMentions(req.user.uid, query);
   }
 
   @Get('profile')
@@ -46,6 +58,9 @@ export class UsersController {
       displayName?: string;
       bio?: string;
       avatarUrl?: string;
+      coverUrl?: string;
+      birthDate?: string | null;
+      country?: string | null;
     },
   ) {
     return this.usersService.updateProfile(req.user.uid, updateDto);
@@ -63,20 +78,27 @@ export class UsersController {
     return { message: 'User unfollowed successfully' };
   }
 
-@Post('me')
-async syncUser(@Req() req: AuthRequest) {
-  return this.usersService.syncFirebaseUser(
-    req.user.uid,
-    req.user.email!,
-  );
-}
+  @Post('me')
+  async syncUser(
+    @Req() req: AuthRequest,
+    @Body() body: { birthDate?: string },
+  ) {
+    return this.usersService.syncFirebaseUser(
+      req.user.uid,
+      req.user.email!,
+      body?.birthDate,
+    );
+  }
 
   @Get(':username')
   async getByUsername(
     @Req() req: AuthRequest,
     @Param('username') username: string,
   ) {
-    const profile = await this.usersService.getProfileByUsername(username);
+    const profile = await this.usersService.getProfileByUsername(
+      username,
+      req.user.uid,
+    );
 
     if (!profile) {
       return null;

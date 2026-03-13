@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { MessageSquare, Heart, Repeat2, Image as ImageIcon, X } from 'lucide-react';
+import { MessageSquare, Heart, Repeat2, Image as ImageIcon, X, Trash2, Smile, Bookmark, Ban, BarChart2 } from 'lucide-react';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import EmojiPicker from 'emoji-picker-react';
 import {
   CommentAuthor,
   CommentContent,
@@ -50,6 +52,8 @@ import {
   PostButtonContainer,
   PostCard,
   PostContent,
+  PostMedia,
+  PostMediaWrapper,
   PostDate,
   PostDivider,
   PostHeader,
@@ -60,14 +64,31 @@ import { Post, Comment, CreatePostForm as CreatePostFormType } from './types';
 import { feedLabels } from './utils/labels';
 import { formatDate, readFileAsDataURL } from './utils/utils';
 import { feedServices } from './services/feedServices';
+import { blockServices } from '@/services/blockServices';
+import { hashtagServices } from '@/services/hashtagServices';
 import { useComposer } from '../../contexts/ComposerContext';
 
-export default function FeedTab() {
+type FeedTabProps = {
+  /**
+   * When set, the feed will show posts for this hashtag using the
+   * backend hashtag endpoint instead of the regular timeline feed.
+   */
+  activeHashtag?: string | null;
+
+  /**
+   * Called when the user clicks a hashtag inside a post so the
+   * parent layout can keep the sidebar/feed in sync.
+   */
+  onHashtagSelect?: (hashtag: string) => void;
+};
+
+export default function FeedTab({ activeHashtag, onHashtagSelect }: FeedTabProps) {
   const { user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { state, dispatch } = useComposer();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const repostFileInputRef = useRef<HTMLInputElement>(null);
   const [isGifPickerOpen, setIsGifPickerOpen] = useState(false);
   const [gifSearchTerm, setGifSearchTerm] = useState('');
   const [gifResults, setGifResults] = useState<
@@ -75,8 +96,120 @@ export default function FeedTab() {
   >([]);
   const [isSearchingGifs, setIsSearchingGifs] = useState(false);
   const [commentModalPost, setCommentModalPost] = useState<Post | null>(null);
+  const [deleteConfirmPost, setDeleteConfirmPost] = useState<Post | null>(null);
   const [commentText, setCommentText] = useState('');
   const [feedType, setFeedType] = useState<'for_you' | 'following'>('for_you');
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionSuggestions, setMentionSuggestions] = useState<
+    { id: string; username: string; displayName?: string; avatarUrl?: string | null }[]
+  >([]);
+  const [isMentionListOpen, setIsMentionListOpen] = useState(false);
+  const [activeMentionContext, setActiveMentionContext] = useState<'post' | 'comment' | null>(
+    null,
+  );
+  const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+  const [saveDialogPost, setSaveDialogPost] = useState<Post | null>(null);
+  const [collections, setCollections] = useState<{ id: string; name: string }[]>([]);
+  const [selectedCollectionName, setSelectedCollectionName] = useState<string | 'none'>('none');
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
+  const [blockConfirmUser, setBlockConfirmUser] = useState<{ id: string; username: string } | null>(null);
+  const [savedPostCollections, setSavedPostCollections] = useState<
+    Record<
+      string,
+      {
+        collections: string[];
+        hasUnsorted: boolean;
+      }
+    >
+  >({});
+  const [isPollEnabled, setIsPollEnabled] = useState(false);
+  const [repostModalPost, setRepostModalPost] = useState<Post | null>(null);
+  const [repostText, setRepostText] = useState('');
+  const [repostImageUrl, setRepostImageUrl] = useState<string | undefined>(undefined);
+  const [repostGifUrl, setRepostGifUrl] = useState<string | undefined>(undefined);
+  const [gifTarget, setGifTarget] = useState<'create' | 'repost' | null>(null);
+  const pollVoteMutation = useMutation({
+    mutationFn: async ({ postId, optionId }: { postId: string; optionId: string }) => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+      return feedServices.voteOnPoll(token, postId, optionId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['feed'] });
+    },
+  });
+
+  const refreshSavedState = async (token: string) => {
+    const saved = await feedServices.fetchSavedPosts(token);
+
+    const ids = new Set<string>();
+    const collectionMap: Record<
+      string,
+      {
+        collections: Set<string>;
+        hasUnsorted: boolean;
+      }
+    > = {};
+
+    saved.forEach((p: Post) => {
+      ids.add(p.id);
+      const existing = collectionMap[p.id] ?? {
+        collections: new Set<string>(),
+        hasUnsorted: false,
+      };
+
+      if (p.collectionName) {
+        existing.collections.add(p.collectionName);
+      } else {
+        existing.hasUnsorted = true;
+      }
+
+      collectionMap[p.id] = existing;
+    });
+
+    setSavedPostIds(ids);
+    setSavedPostCollections(
+      Object.fromEntries(
+        Object.entries(collectionMap).map(([postId, value]) => [
+          postId,
+          {
+            collections: Array.from(value.collections),
+            hasUnsorted: value.hasUnsorted,
+          },
+        ]),
+      ),
+    );
+
+    const cols = await feedServices.fetchSavedCollections(token);
+    setCollections(cols || []);
+  };
+
+  useEffect(() => {
+    const loadSaved = async () => {
+      if (!user) {
+        setSavedPostIds(new Set());
+        setBlockedUserIds(new Set());
+        return;
+      }
+      try {
+        const token = await user.getIdToken();
+        await refreshSavedState(token);
+
+        // Load blocked users so we can visually react in the feed
+        try {
+          const blocked = await blockServices.fetchBlockedUsers(token);
+          setBlockedUserIds(new Set(blocked.map((b) => b.id)));
+        } catch (error) {
+          console.error('Failed to load blocked users', error);
+        }
+      } catch (error) {
+        console.error('Failed to load saved posts', error);
+      }
+    };
+    void loadSaved();
+  }, [user]);
 
   const { data: comments = [] } = useQuery({
     queryKey: ['comments', commentModalPost?.id],
@@ -93,44 +226,229 @@ export default function FeedTab() {
     handleSubmit,
     reset,
     formState: { isSubmitting },
-  } = useForm<CreatePostFormType>();
-
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
-    queryKey: ['feed', feedType],
-    queryFn: async ({ pageParam = 1 }) => {
-      const token = await user?.getIdToken();
-      if (!token) throw new Error('Not authenticated');
-      return feedServices.fetchFeed(token, pageParam, 10, feedType);
+    getValues,
+    setValue,
+  } = useForm<CreatePostFormType>({
+    defaultValues: {
+      content: '',
+      pollQuestion: '',
+      pollOption1: '',
+      pollOption2: '',
+      pollOption3: '',
+      pollOption4: '',
+      pollDurationMinutes: 1440, // 1 day
     },
-    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
-    initialPageParam: 1,
-    enabled: !!user,
-    staleTime: 0,
-    refetchOnMount: true,
   });
+
+  const loadMentionSuggestions = async (rawQuery: string) => {
+    try {
+      const token = await user?.getIdToken();
+      if (!token) return;
+      const trimmed = rawQuery.trim();
+      const results = await feedServices.fetchMentionSuggestions(token, trimmed);
+      setMentionSuggestions(results || []);
+      setIsMentionListOpen(true);
+    } catch (error) {
+      console.error('Failed to load mention suggestions', error);
+      setMentionSuggestions([]);
+      setIsMentionListOpen(false);
+    }
+  };
+
+  const handleMentionDetectionForPost = (value: string) => {
+    const match = value.match(/(^|\s)@([\w]{0,32})$/);
+    if (match) {
+      const query = match[2];
+      setActiveMentionContext('post');
+      setMentionQuery(query);
+      void loadMentionSuggestions(query);
+    } else {
+      setIsMentionListOpen(false);
+      setMentionSuggestions([]);
+      setMentionQuery('');
+      setActiveMentionContext(null);
+    }
+  };
+
+  const handleMentionDetectionForComment = (value: string) => {
+    const match = value.match(/(^|\s)@([\w]{0,32})$/);
+    if (match) {
+      const query = match[2];
+      setActiveMentionContext('comment');
+      setMentionQuery(query);
+      void loadMentionSuggestions(query);
+    } else {
+      setIsMentionListOpen(false);
+      setMentionSuggestions([]);
+      setMentionQuery('');
+      setActiveMentionContext(null);
+    }
+  };
+
+  const insertMention = (username: string) => {
+    if (activeMentionContext === 'post') {
+      const current = getValues('content') || '';
+      const updated = current.replace(/(^|\s)@[\w]{0,32}$/, `$1@${username} `);
+      setValue('content', updated);
+    } else if (activeMentionContext === 'comment') {
+      const current = commentText;
+      const updated = current.replace(/(^|\s)@[\w]{0,32}$/, `$1@${username} `);
+      setCommentText(updated);
+    }
+
+    setIsMentionListOpen(false);
+    setMentionSuggestions([]);
+    setMentionQuery('');
+    setActiveMentionContext(null);
+  };
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+    useInfiniteQuery({
+      queryKey: ['feed', feedType, activeHashtag ?? 'all'],
+      queryFn: async ({ pageParam = 1 }) => {
+        const token = await user?.getIdToken();
+        if (!token) throw new Error('Not authenticated');
+
+        if (activeHashtag) {
+          return hashtagServices.fetchPostsByHashtag<Post>(
+            token,
+            activeHashtag,
+            pageParam,
+            10,
+          );
+        }
+
+        return feedServices.fetchFeed(token, pageParam, 10, feedType);
+      },
+      getNextPageParam: (lastPage) =>
+        lastPage.hasMore ? lastPage.page + 1 : undefined,
+      initialPageParam: 1,
+      enabled: !!user,
+      staleTime: 0,
+      refetchOnMount: true,
+    });
 
   const posts = data?.pages.flatMap((page) => page.data) ?? [];
   console.log(posts);
+
+  const handleToggleSave = async (post: Post) => {
+    if (!user) return;
+
+    // Always open dialog to manage / choose collections,
+    // regardless of whether the post is already saved.
+    setSaveDialogPost(post);
+    setSelectedCollectionName('none');
+    setNewCollectionName('');
+    setIsSaveDialogOpen(true);
+  };
+
+  const confirmSaveToCollection = async () => {
+    if (!user || !saveDialogPost) return;
+
+    const finalName =
+      selectedCollectionName === 'none'
+        ? '__NO_COLLECTION__'
+        : selectedCollectionName === '__new__'
+          ? newCollectionName.trim() || undefined
+          : selectedCollectionName;
+
+    try {
+      const token = await user.getIdToken();
+      const result = await feedServices.toggleSavedPost(token, saveDialogPost.id, finalName);
+      if (result.saved) {
+        // Ensure the post is marked as saved locally
+        setSavedPostIds((prev) => {
+          const next = new Set(prev);
+          next.add(saveDialogPost.id);
+          return next;
+        });
+      }
+
+      // Refresh saved posts & collections so per-post membership stays accurate
+      await refreshSavedState(token);
+    } catch (error) {
+      console.error('Failed to save post to collection', error);
+    } finally {
+      setIsSaveDialogOpen(false);
+      setSaveDialogPost(null);
+      setNewCollectionName('');
+      setSelectedCollectionName('none');
+    }
+  };
+
+  const blockUserMutation = useMutation({
+    mutationFn: async ({ userId }: { userId: string }) => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+      await blockServices.blockUser(token, userId);
+    },
+    onSuccess: (_, variables) => {
+      setBlockedUserIds((prev) => {
+        const next = new Set(prev);
+        next.add(variables.userId);
+        return next;
+      });
+      queryClient.invalidateQueries({ queryKey: ['feed'] });
+    },
+  });
 
   const createPostMutation = useMutation({
     mutationFn: async (data: CreatePostFormType) => {
       const token = await user?.getIdToken();
       if (!token) throw new Error('Not authenticated');
+      let pollPayload:
+        | {
+            question?: string;
+            options: string[];
+            expiresAt: string;
+          }
+        | undefined;
+
+      if (isPollEnabled) {
+        const options = [
+          data.pollOption1?.trim(),
+          data.pollOption2?.trim(),
+          data.pollOption3?.trim(),
+          data.pollOption4?.trim(),
+        ].filter(Boolean) as string[];
+
+        if (options.length >= 2) {
+          const minutes = data.pollDurationMinutes ?? 1440;
+          const now = new Date();
+          const expiresAt = new Date(now.getTime() + minutes * 60 * 1000);
+          pollPayload = {
+            question: data.pollQuestion?.trim() || undefined,
+            options,
+            expiresAt: expiresAt.toISOString(),
+          };
+        }
+      }
+
       return feedServices.createPost(
         token,
         data.content,
         state.imageUrl || undefined,
         state.gifUrl || undefined,
+        pollPayload,
       );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feed'] });
-      reset();
+      reset({
+        content: '',
+        pollQuestion: '',
+        pollOption1: '',
+        pollOption2: '',
+        pollOption3: '',
+        pollOption4: '',
+        pollDurationMinutes: 1440,
+      });
       dispatch({ type: 'SET_IMAGE_URL', imageUrl: undefined });
       dispatch({ type: 'SET_GIF_URL', gifUrl: undefined });
       setGifResults([]);
       setGifSearchTerm('');
       setIsGifPickerOpen(false);
+      setIsPollEnabled(false);
     },
   });
 
@@ -213,10 +531,50 @@ export default function FeedTab() {
     },
   });
 
-  const onSubmit = (data: CreatePostFormType) => {
-    if (data.content.trim() || state.imageUrl || state.gifUrl) {
-      createPostMutation.mutate(data);
-    }
+  const deletePostMutation = useMutation({
+    mutationFn: async ({ postId }: { postId: string }) => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+      return feedServices.deletePost(token, postId);
+    },
+    onMutate: async ({ postId }) => {
+      await queryClient.cancelQueries({ queryKey: ['feed', feedType] });
+      const previousData = queryClient.getQueryData(['feed', feedType]);
+
+      queryClient.setQueryData(['feed', feedType], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            data: page.data.filter((post: Post) => post.id !== postId),
+          })),
+        };
+      });
+
+      return { previousData };
+    },
+    onError: (err, variables, context: any) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(['feed', feedType], context.previousData);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['feed'] });
+    },
+  });
+
+  const onSubmit = async (data: CreatePostFormType) => {
+    const hasPoll =
+      isPollEnabled &&
+      (data.pollOption1?.trim() ||
+        data.pollOption2?.trim() ||
+        data.pollOption3?.trim() ||
+        data.pollOption4?.trim());
+    const hasContent = data.content.trim() || state.imageUrl || state.gifUrl || hasPoll;
+    if (!hasContent) return;
+
+    createPostMutation.mutate(data);
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,6 +583,19 @@ export default function FeedTab() {
       try {
         const dataUrl = await readFileAsDataURL(file);
         dispatch({ type: 'SET_IMAGE_URL', imageUrl: dataUrl });
+      } catch (error) {
+        alert(feedLabels.selectImageFile);
+      }
+    }
+  };
+
+  const handleRepostFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const dataUrl = await readFileAsDataURL(file);
+        setRepostImageUrl(dataUrl);
+        setRepostGifUrl(undefined);
       } catch (error) {
         alert(feedLabels.selectImageFile);
       }
@@ -277,14 +648,14 @@ export default function FeedTab() {
       <FeedContainer>
         <FeedTabsRow>
           <FeedTabButton
-            $active={feedType === 'for_you'}
+            $active={!activeHashtag && feedType === 'for_you'}
             onClick={() => setFeedType('for_you')}
             type="button"
           >
             {feedLabels.forYouTab}
           </FeedTabButton>
           <FeedTabButton
-            $active={feedType === 'following'}
+            $active={!activeHashtag && feedType === 'following'}
             onClick={() => setFeedType('following')}
             type="button"
           >
@@ -297,7 +668,79 @@ export default function FeedTab() {
               placeholder={feedLabels.createPostPlaceholder}
               rows={3}
               {...register('content', { required: true })}
+              onChange={(e) => {
+                const value = e.target.value;
+                setValue('content', value);
+                handleMentionDetectionForPost(value);
+              }}
             />
+            {isMentionListOpen &&
+              activeMentionContext === 'post' &&
+              mentionSuggestions.length > 0 && (
+                <div
+                  style={{
+                    marginTop: '4px',
+                    borderRadius: '12px',
+                    border: '1px solid rgb(var(--border))',
+                    background: 'rgb(var(--background))',
+                    maxHeight: '180px',
+                    overflowY: 'auto',
+                    padding: '4px 0',
+                  }}
+                >
+                  {mentionSuggestions.map((userSuggestion) => (
+                    <button
+                      key={userSuggestion.id}
+                      type="button"
+                      onClick={() => insertMention(userSuggestion.username)}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '6px 10px',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: '999px',
+                          background: '#e5e7eb',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {(userSuggestion.displayName || userSuggestion.username)[0]?.toUpperCase()}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                        <span
+                          style={{
+                            fontSize: '0.85rem',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {userSuggestion.displayName || userSuggestion.username}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.8rem',
+                            color: 'rgb(var(--muted-foreground))',
+                          }}
+                        >
+                          @{userSuggestion.username}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             {state.imageUrl && (
               <div style={{ position: 'relative', margin: '10px 0' }}>
                 <img
@@ -307,7 +750,8 @@ export default function FeedTab() {
                     maxWidth: '100%',
                     maxHeight: '300px',
                     borderRadius: '12px',
-                    objectFit: 'cover',
+                    objectFit: 'contain',
+                    backgroundColor: 'rgb(var(--card))',
                   }}
                 />
                 <button
@@ -342,7 +786,8 @@ export default function FeedTab() {
                     maxWidth: '100%',
                     maxHeight: '300px',
                     borderRadius: '12px',
-                    objectFit: 'cover',
+                    objectFit: 'contain',
+                    backgroundColor: 'rgb(var(--card))',
                   }}
                 />
                 <button
@@ -368,6 +813,117 @@ export default function FeedTab() {
                 </button>
               </div>
             )}
+            {isPollEnabled && (
+              <div
+                style={{
+                  marginTop: '12px',
+                  borderTop: '1px solid rgba(148, 163, 184, 0.3)',
+                  paddingTop: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="Poll question (optional)"
+                    {...register('pollQuestion')}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(148, 163, 184, 0.5)',
+                      background: 'rgba(15, 23, 42, 0.02)',
+                      color: 'inherit',
+                      fontSize: '14px',
+                    }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Option 1"
+                    {...register('pollOption1')}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(148, 163, 184, 0.5)',
+                      background: 'rgba(15, 23, 42, 0.02)',
+                      color: 'inherit',
+                      fontSize: '14px',
+                    }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Option 2"
+                    {...register('pollOption2')}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(148, 163, 184, 0.5)',
+                      background: 'rgba(15, 23, 42, 0.02)',
+                      color: 'inherit',
+                      fontSize: '14px',
+                    }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Option 3 (optional)"
+                    {...register('pollOption3')}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(148, 163, 184, 0.5)',
+                      background: 'rgba(15, 23, 42, 0.02)',
+                      color: 'inherit',
+                      fontSize: '14px',
+                    }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Option 4 (optional)"
+                    {...register('pollOption4')}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(148, 163, 184, 0.5)',
+                      background: 'rgba(15, 23, 42, 0.02)',
+                      color: 'inherit',
+                      fontSize: '14px',
+                    }}
+                  />
+
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginTop: '4px',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <span style={{ color: 'rgb(var(--muted-foreground))' }}>Poll duration</span>
+                    <select
+                      {...register('pollDurationMinutes', { valueAsNumber: true })}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(148, 163, 184, 0.5)',
+                        background: 'rgba(15, 23, 42, 0.02)',
+                        color: 'inherit',
+                        fontSize: '12px',
+                      }}
+                    >
+                      <option value={5}>5 minutes</option>
+                      <option value={60}>1 hour</option>
+                      <option value={60 * 24}>1 day</option>
+                      <option value={60 * 24 * 3}>3 days</option>
+                      <option value={60 * 24 * 7}>7 days</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
             <PostButtonContainer>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <input
@@ -385,35 +941,90 @@ export default function FeedTab() {
                     border: 'none',
                     cursor: 'pointer',
                     padding: '8px',
-                    borderRadius: '50%',
+                    borderRadius: '999px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'var(--primary-color, #1d9bf0)',
+                    color: 'rgb(var(--accent))',
                   }}
                   title={feedLabels.addImage}
                 >
                   <ImageIcon size={20} />
                 </button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '8px',
+                        borderRadius: '999px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'rgb(var(--accent))',
+                      }}
+                      title="Add emoji"
+                    >
+                      <Smile size={20} />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 border border-border bg-white shadow-xl rounded-2xl">
+                    <EmojiPicker
+                      onEmojiClick={(emoji) => {
+                        const current = getValues('content') || '';
+                        setValue('content', `${current}${emoji.emoji}`);
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
                 <button
                   type="button"
-                  onClick={() => setIsGifPickerOpen(true)}
+                  onClick={() => {
+                    setGifTarget('create');
+                    setIsGifPickerOpen(true);
+                  }}
                   style={{
                     background: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
-                    padding: '8px',
-                    borderRadius: '50%',
+                    padding: '8px 10px',
+                    borderRadius: '999px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'var(--primary-color, #1d9bf0)',
+                    color: 'rgb(var(--accent))',
                     fontSize: '0.75rem',
                     fontWeight: 600,
                   }}
                   title="Add GIF"
                 >
                   GIF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsPollEnabled((prev) => !prev)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    borderRadius: '999px',
+                    border: '1px solid rgba(var(--accent), 0.55)',
+                    background: isPollEnabled
+                      ? 'rgba(var(--accent), 0.16)'
+                      : 'rgba(var(--accent), 0.04)',
+                    color: 'rgb(var(--accent-foreground))',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  <BarChart2 size={16} />
+                  <span>{isPollEnabled ? 'Poll enabled' : 'Add poll'}</span>
                 </button>
               </div>
               <PostButton type="submit" disabled={isSubmitting}>
@@ -422,6 +1033,50 @@ export default function FeedTab() {
             </PostButtonContainer>
           </CreatePostForm>
         </CreatePostCard>
+
+        {activeHashtag && (
+          <div
+            style={{
+              marginTop: '0.75rem',
+              marginBottom: '0.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.85rem',
+              color: 'rgb(var(--muted-foreground))',
+            }}
+          >
+            <span>Showing posts for</span>
+            <button
+              type="button"
+              onClick={() => onHashtagSelect?.('')}
+              style={{
+                borderRadius: '999px',
+                border: '1px solid rgba(var(--accent), 0.8)',
+                padding: '0.16rem 0.7rem',
+                background: 'rgba(var(--accent), 0.12)',
+                color: 'rgb(var(--accent-foreground))',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              #{activeHashtag}
+            </button>
+            <button
+              type="button"
+              onClick={() => onHashtagSelect?.('')}
+              style={{
+                marginLeft: 'auto',
+                fontSize: '0.8rem',
+                color: 'rgb(var(--muted-foreground))',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+              }}
+            >
+              Clear
+            </button>
+          </div>
+        )}
 
         <FeedSection>
           {isLoading ? (
@@ -442,10 +1097,20 @@ export default function FeedTab() {
               </EmptySubtext>
             </EmptyCard>
           ) : (
-            posts.map((post: Post) => (
-              <PostCard
-                key={`${post.isRepost ? 'repost' : 'post'}-${post.id}-${post.authorId || ''}`}
-              >
+            posts.map((post: Post) => {
+              const isSaved = !!user && savedPostIds.has(post.id);
+              const isBlockedAuthor = !!post.authorId && blockedUserIds.has(post.authorId);
+
+              return (
+                <PostCard
+                  key={`${post.isRepost ? 'repost' : 'post'}-${post.id}-${post.authorId || ''}`}
+                >
+                  {isBlockedAuthor ? (
+                    <div style={{ padding: '16px', textAlign: 'center', fontSize: '0.9rem' }}>
+                      You blocked @{post.authorUsername}. Their posts are hidden.
+                    </div>
+                  ) : (
+                    <>
                 {post.isRepost && (
                   <div
                     style={{
@@ -495,12 +1160,12 @@ export default function FeedTab() {
 
                   <PostBody>
                     <PostHeader>
-                      <PostAuthorName
-                        onClick={() => router.push(`/profile/${post.authorUsername}`)}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        {post.authorDisplayName || post.authorUsername}
-                      </PostAuthorName>
+                    <PostAuthorName
+                      onClick={() => router.push(`/profile/${post.authorUsername}`)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {post.authorDisplayName || post.authorUsername}
+                    </PostAuthorName>
                       <PostAuthorUsername
                         onClick={() =>
                           router.push(
@@ -513,51 +1178,401 @@ export default function FeedTab() {
                       </PostAuthorUsername>
                       <PostDivider>·</PostDivider>
                       <PostDate>{formatDate(post.createdAt)}</PostDate>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSave(post)}
+                        style={{
+                          marginLeft: 'auto',
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '4px',
+                          color: isSaved
+                            ? 'rgb(var(--accent))'
+                            : 'rgb(var(--muted-foreground))',
+                        }}
+                        title={isSaved ? 'Unsave post' : 'Save post'}
+                      >
+                        <Bookmark size={16} fill={isSaved ? 'currentColor' : 'none'} />
+                      </button>
+                      {post.authorId !== user?.uid && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setBlockConfirmUser({
+                              id: post.authorId!,
+                              username: post.authorUsername,
+                            })
+                          }
+                          style={{
+                            marginLeft: '8px',
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '4px',
+                            color: 'rgb(var(--muted-foreground))',
+                          }}
+                          title="Block user"
+                        >
+                          <Ban size={16} />
+                        </button>
+                      )}
                     </PostHeader>
 
-                    <PostText>{post.isRepost ? post.originalPostContent : post.content}</PostText>
+                    {!post.isRepost && post.content && <PostText>{post.content}</PostText>}
 
-                    {(post.isRepost ? post.originalPostGifUrl : post.gifUrl) ||
-                    (post.isRepost ? post.originalPostImageUrl : post.imageUrl) ? (
-                      <div style={{ marginTop: '12px' }}>
-                        <img
-                          src={
-                            (post.isRepost ? post.originalPostGifUrl : post.gifUrl) ||
-                            (post.isRepost ? post.originalPostImageUrl : post.imageUrl)
-                          }
-                          alt="Post media"
-                          style={{
-                            width: '100%',
-                            borderRadius: '12px',
-                            maxHeight: '500px',
-                            objectFit: 'cover',
-                          }}
-                        />
+                    {post.hashtags && post.hashtags.length > 0 && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: '0.35rem',
+                          marginBottom: '0.5rem',
+                        }}
+                      >
+                        {post.hashtags.map((tag) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => onHashtagSelect?.(tag)}
+                            style={{
+                              borderRadius: '999px',
+                              border: '1px solid rgba(var(--accent), 0.8)',
+                              padding: '0.12rem 0.6rem',
+                              fontSize: '0.8rem',
+                              background: 'rgba(var(--accent), 0.1)',
+                              color: 'rgb(var(--accent-foreground))',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            #{tag}
+                          </button>
+                        ))}
                       </div>
-                    ) : null}
+                    )}
+
+                    {post.isRepost && (
+                      <>
+                        {post.content && <PostText>{post.content}</PostText>}
+                        <OriginalPostCard>
+                          <OriginalPostHeader>
+                            <OriginalPostAuthor>
+                              {post.originalAuthorUsername}
+                            </OriginalPostAuthor>
+                            <OriginalPostUsername>
+                              @{post.originalAuthorUsername}
+                            </OriginalPostUsername>
+                          </OriginalPostHeader>
+                          <OriginalPostContent>
+                            {post.originalPostContent}
+                          </OriginalPostContent>
+                          {(post.originalPostGifUrl || post.originalPostImageUrl) && (
+                            <PostMediaWrapper>
+                              <PostMedia
+                                src={post.originalPostGifUrl || post.originalPostImageUrl}
+                                alt="Original post media"
+                              />
+                            </PostMediaWrapper>
+                          )}
+                          {post.originalPostPoll && (
+                            <div
+                              style={{
+                                marginTop: '12px',
+                                padding: '10px 12px',
+                                borderRadius: '12px',
+                                border: '1px solid rgba(148, 163, 184, 0.5)',
+                                background: 'rgba(15, 23, 42, 0.02)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px',
+                              }}
+                            >
+                              {post.originalPostPoll.question && (
+                                <div
+                                  style={{
+                                    fontWeight: 600,
+                                    fontSize: '0.9rem',
+                                    marginBottom: '2px',
+                                  }}
+                                >
+                                  {post.originalPostPoll.question}
+                                </div>
+                              )}
+                              {post.originalPostPoll.options.map((option) => {
+                                const total = post.originalPostPoll!.totalVotes ?? 0;
+                                const votes = option.votesCount ?? 0;
+                                const percentage = total > 0 ? Math.round((votes / total) * 100) : 0;
+                                const isSelected =
+                                  post.originalPostPoll!.currentUserVoteOptionId &&
+                                  post.originalPostPoll!.currentUserVoteOptionId === option.id;
+                                const isDisabled =
+                                  !post.originalPostPoll!.isActive ||
+                                  pollVoteMutation.isPending ||
+                                  !user;
+                                const baseGradient =
+                                  'linear-gradient(90deg, #38bdf8, #6366f1, #ec4899)';
+                                const neutralBg = 'rgba(15, 23, 42, 0.04)';
+                                return (
+                                  <button
+                                    key={option.id}
+                                    type="button"
+                                    disabled={isDisabled}
+                                    onClick={() =>
+                                      pollVoteMutation.mutate({
+                                        postId: post.originalPostId!,
+                                        optionId: option.id,
+                                      })
+                                    }
+                                    style={{
+                                      position: 'relative',
+                                      width: '100%',
+                                      textAlign: 'left',
+                                      padding: '8px 12px',
+                                      borderRadius: '999px',
+                                      border: isSelected
+                                        ? '0px solid transparent'
+                                        : '1px solid rgba(148, 163, 184, 0.6)',
+                                      background: isSelected ? baseGradient : neutralBg,
+                                      cursor: isDisabled ? 'default' : 'pointer',
+                                      fontSize: '0.85rem',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      gap: '8px',
+                                      overflow: 'hidden',
+                                      transition:
+                                        'background 140ms ease, border-color 140ms ease, color 140ms ease',
+                                      color: isSelected ? '#ffffff' : 'inherit',
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        position: 'relative',
+                                        zIndex: 1,
+                                        fontWeight: isSelected ? 600 : 500,
+                                      }}
+                                    >
+                                      {option.text}
+                                    </span>
+                                    <span
+                                      style={{
+                                        position: 'relative',
+                                        zIndex: 1,
+                                        fontSize: '0.8rem',
+                                        color: isSelected
+                                          ? '#e5e7eb'
+                                          : 'rgb(var(--muted-foreground))',
+                                      }}
+                                    >
+                                      {percentage}%
+                                    </span>
+                                    <span
+                                      style={{
+                                        position: 'absolute',
+                                        left: 0,
+                                        top: 0,
+                                        bottom: 0,
+                                        width: `${percentage}%`,
+                                        minWidth: percentage > 0 ? '10%' : '0',
+                                        background: isSelected
+                                          ? 'rgba(15, 23, 42, 0.18)'
+                                          : 'rgba(56, 189, 248, 0.25)',
+                                        opacity: 1,
+                                        transition: 'width 160ms ease',
+                                        zIndex: 0,
+                                        pointerEvents: 'none',
+                                      }}
+                                    />
+                                  </button>
+                                );
+                              })}
+                              <div
+                                style={{
+                                  marginTop: '4px',
+                                  fontSize: '0.75rem',
+                                  color: 'rgb(var(--muted-foreground))',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                }}
+                              >
+                                <span>{post.originalPostPoll.totalVotes} votes</span>
+                                <span>
+                                  {post.originalPostPoll.isActive
+                                    ? 'Poll ends soon'
+                                    : 'Poll ended'}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </OriginalPostCard>
+                      </>
+                    )}
+
+                    {!post.isRepost && (post.gifUrl || post.imageUrl) && (
+                      <PostMediaWrapper>
+                        <PostMedia
+                          src={post.gifUrl || post.imageUrl}
+                          alt="Post media"
+                        />
+                      </PostMediaWrapper>
+                    )}
+
+                    {post.poll && (
+                      <div
+                        style={{
+                          marginTop: '12px',
+                          padding: '10px 12px',
+                          borderRadius: '12px',
+                          border: '1px solid rgba(148, 163, 184, 0.5)',
+                          background: 'rgba(15, 23, 42, 0.02)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '8px',
+                        }}
+                      >
+                        {post.poll.question && (
+                          <div
+                            style={{
+                              fontWeight: 600,
+                              fontSize: '0.9rem',
+                              marginBottom: '2px',
+                            }}
+                          >
+                            {post.poll.question}
+                          </div>
+                        )}
+                        {post.poll &&
+                          post.poll.options.map((option) => {
+                            const total = post.poll!.totalVotes ?? 0;
+                          const votes = option.votesCount ?? 0;
+                          const percentage = total > 0 ? Math.round((votes / total) * 100) : 0;
+                            const isSelected =
+                              post.poll!.currentUserVoteOptionId &&
+                              post.poll!.currentUserVoteOptionId === option.id;
+                            const isDisabled =
+                              !post.poll!.isActive || pollVoteMutation.isPending || !user;
+
+                            const baseGradient =
+                              'linear-gradient(90deg, #38bdf8, #6366f1, #ec4899)'; // teal -> indigo -> pink
+                            const neutralBg = 'rgba(15, 23, 42, 0.04)';
+
+                            return (
+                              <button
+                                key={option.id}
+                                type="button"
+                                disabled={isDisabled}
+                                onClick={() =>
+                                  pollVoteMutation.mutate({ postId: post.id, optionId: option.id })
+                                }
+                                style={{
+                                  position: 'relative',
+                                  width: '100%',
+                                  textAlign: 'left',
+                                  padding: '8px 12px',
+                                  borderRadius: '999px',
+                                  border: isSelected
+                                    ? '0px solid transparent'
+                                    : '1px solid rgba(148, 163, 184, 0.6)',
+                                  background: isSelected ? baseGradient : neutralBg,
+                                  cursor: isDisabled ? 'default' : 'pointer',
+                                  fontSize: '0.85rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  gap: '8px',
+                                  overflow: 'hidden',
+                                  transition:
+                                    'background 140ms ease, border-color 140ms ease, color 140ms ease',
+                                  color: isSelected ? '#ffffff' : 'inherit',
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    position: 'relative',
+                                    zIndex: 1,
+                                    fontWeight: isSelected ? 600 : 500,
+                                  }}
+                                >
+                                  {option.text}
+                                </span>
+                                <span
+                                  style={{
+                                    position: 'relative',
+                                    zIndex: 1,
+                                    fontSize: '0.8rem',
+                                    color: isSelected ? '#e5e7eb' : 'rgb(var(--muted-foreground))',
+                                  }}
+                                >
+                                  {percentage}%
+                                </span>
+                                <span
+                                  style={{
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: 0,
+                                    bottom: 0,
+                                    width: `${percentage}%`,
+                                    minWidth: percentage > 0 ? '10%' : '0',
+                                    background: isSelected
+                                      ? 'rgba(15, 23, 42, 0.18)'
+                                      : 'rgba(56, 189, 248, 0.25)',
+                                    opacity: 1,
+                                    transition: 'width 160ms ease',
+                                    zIndex: 0,
+                                    pointerEvents: 'none',
+                                  }}
+                                />
+                              </button>
+                            );
+                          })}
+                        <div
+                          style={{
+                            marginTop: '4px',
+                            fontSize: '0.75rem',
+                            color: 'rgb(var(--muted-foreground))',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <span>{post.poll.totalVotes} votes</span>
+                          <span>{post.poll.isActive ? 'Poll ends soon' : 'Poll ended'}</span>
+                        </div>
+                      </div>
+                    )}
 
                     <PostActions>
                       <PostActionButton onClick={() => setCommentModalPost(post)}>
-                        <MessageSquare size={16} />
+                        <MessageSquare size={20} />
                         <PostActionCount>{post.repliesCount || 0}</PostActionCount>
                       </PostActionButton>
 
                       {post.authorId !== user?.uid && (
                         <PostActionButton
-                          onClick={() =>
-                            repostMutation.mutate({
-                              postId: post.isRepost ? post.originalPostId! : post.id,
-                              isReposted: post.isReposted,
-                              content: post.content,
-                              imageUrl: post.imageUrl,
-                            })
-                          }
+                          onClick={() => {
+                            if (post.isReposted) {
+                              repostMutation.mutate({
+                                postId: post.isRepost ? post.originalPostId! : post.id,
+                                isReposted: true,
+                              });
+                              return;
+                            }
+
+                            setRepostModalPost(post);
+                            setRepostText('');
+                          }}
                           disabled={repostMutation.isPending}
                           style={{ opacity: repostMutation.isPending ? 0.6 : 1 }}
                         >
-                          <Repeat2 size={16} color={post.isReposted ? '#00ba7c' : 'currentColor'} />
+                          <Repeat2
+                            size={20}
+                            color={post.isReposted ? 'rgb(var(--repost))' : 'currentColor'}
+                          />
                           <PostActionCount
-                            style={{ color: post.isReposted ? '#00ba7c' : 'inherit' }}
+                            style={{ color: post.isReposted ? 'rgb(var(--repost))' : 'inherit' }}
                           >
                             {post.repostsCount || 0}
                           </PostActionCount>
@@ -572,19 +1587,33 @@ export default function FeedTab() {
                         style={{ opacity: likeMutation.isPending ? 0.6 : 1 }}
                       >
                         <Heart
-                          size={16}
-                          fill={post.isLiked ? 'red' : 'none'}
-                          color={post.isLiked ? 'red' : 'currentColor'}
+                          size={20}
+                          fill={post.isLiked ? 'rgb(var(--accent))' : 'none'}
+                          color={post.isLiked ? 'rgb(var(--accent))' : 'currentColor'}
                         />
-                        <PostActionCount style={{ color: post.isLiked ? 'red' : 'inherit' }}>
+                        <PostActionCount
+                          style={{ color: post.isLiked ? 'rgb(var(--accent))' : 'inherit' }}
+                        >
                           {post.likesCount || 0}
                         </PostActionCount>
                       </PostActionButton>
+                      {post.authorId === user?.uid && (
+                        <PostActionButton
+                          onClick={() => setDeleteConfirmPost(post)}
+                          disabled={deletePostMutation.isPending}
+                          style={{ opacity: deletePostMutation.isPending ? 0.6 : 1 }}
+                        >
+                          <Trash2 size={20} />
+                        </PostActionButton>
+                      )}
                     </PostActions>
                   </PostBody>
                 </PostContent>
-              </PostCard>
-            ))
+                    </>
+                  )}
+                </PostCard>
+            );
+          })
           )}
           {hasNextPage && (
             <div style={{ textAlign: 'center', padding: '20px' }}>
@@ -599,29 +1628,36 @@ export default function FeedTab() {
           )}
         </FeedSection>
       </FeedContainer>
-
       {commentModalPost && (
         <ModalOverlay onClick={() => setCommentModalPost(null)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
               <ModalTitle>
-                {feedLabels.replyTo} @{commentModalPost.authorUsername}
+                {feedLabels.replyTo} @{commentModalPost?.authorUsername}
               </ModalTitle>
               <ModalCloseButton onClick={() => setCommentModalPost(null)}>
                 <X size={24} />
               </ModalCloseButton>
             </ModalHeader>
 
-            <OriginalPostCard>
+            <OriginalPostCard
+              style={{
+                // Fixed soft gray card so it never appears white and keeps text readable in all themes
+                background: '#f3f4f6',
+                borderColor: '#e5e7eb',
+              }}
+            >
               <OriginalPostHeader>
-                <OriginalPostAuthor>
-                  {commentModalPost.authorDisplayName || commentModalPost.authorUsername}
+                <OriginalPostAuthor style={{ color: '#111827' }}>
+                  {commentModalPost?.authorDisplayName || commentModalPost?.authorUsername}
                 </OriginalPostAuthor>
-                <OriginalPostUsername>
-                  @{commentModalPost.authorUsername}
+                <OriginalPostUsername style={{ color: '#4b5563' }}>
+                  @{commentModalPost?.authorUsername}
                 </OriginalPostUsername>
               </OriginalPostHeader>
-              <OriginalPostContent>{commentModalPost.content}</OriginalPostContent>
+              <OriginalPostContent style={{ color: '#111827' }}>
+                {commentModalPost?.content}
+              </OriginalPostContent>
             </OriginalPostCard>
 
             {comments.length > 0 && (
@@ -630,15 +1666,27 @@ export default function FeedTab() {
                   {feedLabels.comments} ({comments.length})
                 </CommentsSectionTitle>
                 {comments.map((comment: Comment) => (
-                  <CommentItem key={comment.id}>
+                  <CommentItem
+                    key={comment.id}
+                    style={{
+                      background: '#e5e7eb', // light gray
+                      borderColor: '#d1d5db',
+                    }}
+                  >
                     <CommentHeader>
-                      <CommentAuthor>
+                      <CommentAuthor style={{ color: '#111827' }}>
                         {comment.user.displayName || comment.user.username}
                       </CommentAuthor>
-                      <CommentUsername>@{comment.user.username}</CommentUsername>
-                      <CommentDate>{formatDate(comment.createdAt)}</CommentDate>
+                      <CommentUsername style={{ color: '#4b5563' }}>
+                        @{comment.user.username}
+                      </CommentUsername>
+                      <CommentDate style={{ color: '#9ca3af' }}>
+                        {formatDate(comment.createdAt)}
+                      </CommentDate>
                     </CommentHeader>
-                    <CommentContent>{comment.content}</CommentContent>
+                    <CommentContent style={{ color: '#111827' }}>
+                      {comment.content}
+                    </CommentContent>
                   </CommentItem>
                 ))}
               </CommentsSection>
@@ -646,18 +1694,95 @@ export default function FeedTab() {
 
             <PostTextarea
               value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setCommentText(value);
+                handleMentionDetectionForComment(value);
+              }}
               placeholder={feedLabels.writeReply}
               style={{
                 minHeight: '100px',
                 resize: 'vertical',
+                border: '1px solid rgb(var(--border))',
               }}
             />
+            {isMentionListOpen &&
+              activeMentionContext === 'comment' &&
+              mentionSuggestions.length > 0 && (
+                <div
+                  style={{
+                    marginTop: '4px',
+                    borderRadius: '12px',
+                    border: '1px solid rgb(var(--border))',
+                    background: 'rgb(var(--background))',
+                    maxHeight: '180px',
+                    overflowY: 'auto',
+                    padding: '4px 0',
+                  }}
+                >
+                  {mentionSuggestions.map((userSuggestion) => (
+                    <button
+                      key={userSuggestion.id}
+                      type="button"
+                      onClick={() => insertMention(userSuggestion.username)}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '6px 10px',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: '999px',
+                          background: '#e5e7eb',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {(userSuggestion.displayName || userSuggestion.username)[0]?.toUpperCase()}
+                      </div>
+                      <div
+                        style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}
+                      >
+                        <span
+                          style={{
+                            fontSize: '0.85rem',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {userSuggestion.displayName || userSuggestion.username}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.8rem',
+                            color: 'rgb(var(--muted-foreground))',
+                          }}
+                        >
+                          @{userSuggestion.username}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             <CommentInputContainer>
               <PostButton
-                onClick={() =>
-                  commentMutation.mutate({ postId: commentModalPost.id, content: commentText })
-                }
+                onClick={async () => {
+                  const trimmed = commentText.trim();
+                  if (!trimmed || !commentModalPost) return;
+
+                  commentMutation.mutate({ postId: commentModalPost.id, content: trimmed });
+                }}
                 disabled={!commentText.trim() || commentMutation.isPending}
                 type="button"
               >
@@ -668,12 +1793,383 @@ export default function FeedTab() {
         </ModalOverlay>
       )}
 
+      {deleteConfirmPost && (
+        <ModalOverlay onClick={() => setDeleteConfirmPost(null)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <ModalTitle>Delete tweet?</ModalTitle>
+              <ModalCloseButton onClick={() => setDeleteConfirmPost(null)}>
+                <X size={24} />
+              </ModalCloseButton>
+            </ModalHeader>
+
+            <p
+              style={{
+                marginBottom: '1.25rem',
+                color: 'rgb(var(--muted-foreground))',
+                fontSize: '0.95rem',
+              }}
+            >
+              This can&apos;t be undone and it will be removed from everyone&apos;s timeline.
+            </p>
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '0.75rem',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmPost(null)}
+                style={{
+                  padding: '0.45rem 1.1rem',
+                  borderRadius: '999px',
+                  border: '1px solid rgb(var(--border))',
+                  background: 'rgb(var(--background))',
+                  color: 'rgb(var(--foreground))',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <PostButton
+                type="button"
+                onClick={() => {
+                  if (!deleteConfirmPost) return;
+                  deletePostMutation.mutate({ postId: deleteConfirmPost.id });
+                  setDeleteConfirmPost(null);
+                }}
+                disabled={deletePostMutation.isPending}
+                style={{ opacity: deletePostMutation.isPending ? 0.6 : 1 }}
+              >
+                Delete
+              </PostButton>
+            </div>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {repostModalPost && (
+        <ModalOverlay
+          onClick={() => {
+            if (repostMutation.isPending) return;
+            setRepostModalPost(null);
+            setRepostText('');
+            setRepostImageUrl(undefined);
+            setRepostGifUrl(undefined);
+          }}
+        >
+          <ModalContent
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <ModalHeader>
+              <ModalTitle>Repost</ModalTitle>
+              <ModalCloseButton
+                onClick={() => {
+                  if (repostMutation.isPending) return;
+                  setRepostModalPost(null);
+                  setRepostText('');
+                  setRepostImageUrl(undefined);
+                  setRepostGifUrl(undefined);
+                }}
+              >
+                <X size={24} />
+              </ModalCloseButton>
+            </ModalHeader>
+
+            <OriginalPostCard
+              style={{
+                background: '#f3f4f6',
+                borderColor: '#e5e7eb',
+                marginBottom: '12px',
+              }}
+            >
+              <OriginalPostHeader>
+                <OriginalPostAuthor style={{ color: '#111827' }}>
+                  {repostModalPost.authorDisplayName || repostModalPost.authorUsername}
+                </OriginalPostAuthor>
+                <OriginalPostUsername style={{ color: '#4b5563' }}>
+                  @{repostModalPost.authorUsername}
+                </OriginalPostUsername>
+              </OriginalPostHeader>
+              <OriginalPostContent style={{ color: '#111827' }}>
+                {repostModalPost.content}
+              </OriginalPostContent>
+            </OriginalPostCard>
+
+            <div style={{ position: 'relative' }}>
+              <PostTextarea
+                value={repostText}
+                onChange={(e) => setRepostText(e.target.value)}
+                placeholder="Add a comment to your repost (optional)"
+                style={{
+                  minHeight: '100px',
+                  resize: 'vertical',
+                  border: '1px solid rgb(var(--border))',
+                  paddingRight: '40px',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  bottom: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '6px',
+                        borderRadius: '999px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'rgb(var(--accent))',
+                      }}
+                      title="Add emoji"
+                    >
+                      <Smile size={18} />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 border border-border bg-white shadow-xl rounded-2xl">
+                    <EmojiPicker
+                      onEmojiClick={(emoji) => {
+                        setRepostText((current) => `${current}${emoji.emoji}`);
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            {(repostImageUrl || repostGifUrl) && (
+              <div style={{ position: 'relative', margin: '10px 0' }}>
+                <img
+                  src={repostGifUrl || repostImageUrl}
+                  alt="Repost media"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '300px',
+                    borderRadius: '12px',
+                    objectFit: 'contain',
+                    backgroundColor: 'rgb(var(--card))',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRepostImageUrl(undefined);
+                    setRepostGifUrl(undefined);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: 'white',
+                  }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            )}
+
+            <CommentInputContainer>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleRepostFileSelect}
+                  style={{ display: 'none' }}
+                  ref={repostFileInputRef}
+                />
+                <button
+                  type="button"
+                  onClick={() => repostFileInputRef.current?.click()}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '8px',
+                    borderRadius: '999px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'rgb(var(--accent))',
+                  }}
+                  title={feedLabels.addImage}
+                >
+                  <ImageIcon size={20} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGifTarget('repost');
+                    setIsGifPickerOpen(true);
+                    setRepostImageUrl(undefined);
+                  }}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '8px 10px',
+                    borderRadius: '999px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'rgb(var(--accent))',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                  }}
+                  title="Add GIF"
+                >
+                  GIF
+                </button>
+              </div>
+
+              <PostButton
+                type="button"
+                disabled={repostMutation.isPending}
+                onClick={() => {
+                  if (!repostModalPost) return;
+                  const targetPostId = repostModalPost.isRepost
+                    ? repostModalPost.originalPostId!
+                    : repostModalPost.id;
+
+                  const trimmed = repostText.trim();
+
+                  repostMutation.mutate(
+                    {
+                      postId: targetPostId,
+                      isReposted: false,
+                      content: trimmed || undefined,
+                      imageUrl: repostImageUrl || undefined,
+                      gifUrl: repostGifUrl || undefined,
+                    },
+                    {
+                      onSettled: () => {
+                        setRepostModalPost(null);
+                        setRepostText('');
+                        setRepostImageUrl(undefined);
+                        setRepostGifUrl(undefined);
+                      },
+                    } as any,
+                  );
+                }}
+              >
+                {repostMutation.isPending ? 'Reposting...' : 'Repost'}
+              </PostButton>
+            </CommentInputContainer>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {blockConfirmUser && (
+        <ModalOverlay
+          onClick={() => {
+            setBlockConfirmUser(null);
+          }}
+        >
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <ModalTitle>Block @{blockConfirmUser.username}?</ModalTitle>
+              <ModalCloseButton
+                onClick={() => {
+                  setBlockConfirmUser(null);
+                }}
+              >
+                <X size={24} />
+              </ModalCloseButton>
+            </ModalHeader>
+
+            <p
+              style={{
+                marginBottom: '1.25rem',
+                color: 'rgb(var(--muted-foreground))',
+                fontSize: '0.95rem',
+              }}
+            >
+              They will no longer be able to follow you, see your posts, or start a conversation
+              with you. You will also no longer see their posts in your feed.
+            </p>
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '0.75rem',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setBlockConfirmUser(null)}
+                style={{
+                  padding: '0.45rem 1.1rem',
+                  borderRadius: '999px',
+                  border: '1px solid rgb(var(--border))',
+                  background: 'rgb(var(--background))',
+                  color: 'rgb(var(--foreground))',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <PostButton
+                type="button"
+                onClick={() => {
+                  const current = blockConfirmUser;
+                  if (!current) return;
+                  blockUserMutation.mutate({ userId: current.id });
+                  setBlockConfirmUser(null);
+                }}
+                disabled={blockUserMutation.isPending}
+                style={{ opacity: blockUserMutation.isPending ? 0.6 : 1 }}
+              >
+                Block
+              </PostButton>
+            </div>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
       {isGifPickerOpen && (
-        <ModalOverlay onClick={() => setIsGifPickerOpen(false)}>
+        <ModalOverlay
+          onClick={() => {
+            setIsGifPickerOpen(false);
+            setGifTarget(null);
+          }}
+        >
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
               <ModalTitle>Select a GIF</ModalTitle>
-              <ModalCloseButton onClick={() => setIsGifPickerOpen(false)}>
+              <ModalCloseButton
+                onClick={() => {
+                  setIsGifPickerOpen(false);
+                  setGifTarget(null);
+                }}
+              >
                 <X size={24} />
               </ModalCloseButton>
             </ModalHeader>
@@ -722,8 +2218,13 @@ export default function FeedTab() {
                   key={gif.id}
                   type="button"
                   onClick={() => {
-                    dispatch({ type: 'SET_GIF_URL', gifUrl: gif.originalUrl });
+                    if (gifTarget === 'repost') {
+                      setRepostGifUrl(gif.originalUrl);
+                    } else {
+                      dispatch({ type: 'SET_GIF_URL', gifUrl: gif.originalUrl });
+                    }
                     setIsGifPickerOpen(false);
+                    setGifTarget(null);
                   }}
                   style={{
                     padding: 0,
@@ -744,6 +2245,200 @@ export default function FeedTab() {
                   />
                 </button>
               ))}
+            </div>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {isSaveDialogOpen && saveDialogPost && (
+        <ModalOverlay
+          onClick={() => {
+            setIsSaveDialogOpen(false);
+            setSaveDialogPost(null);
+          }}
+        >
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <ModalTitle>Save to collection</ModalTitle>
+              <ModalCloseButton
+                onClick={() => {
+                  setIsSaveDialogOpen(false);
+                  setSaveDialogPost(null);
+                }}
+              >
+                <X size={24} />
+              </ModalCloseButton>
+            </ModalHeader>
+
+            <p
+              style={{
+                marginBottom: '0.75rem',
+                fontSize: '0.9rem',
+                color: 'rgb(var(--muted-foreground))',
+              }}
+            >
+              Choose a collection for this post, or leave it without a collection.
+            </p>
+
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5rem',
+                marginBottom: '1rem',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setSelectedCollectionName('none')}
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '999px',
+                  border:
+                    selectedCollectionName === 'none'
+                      ? '2px solid rgb(var(--accent))'
+                      : '1px solid rgb(var(--border))',
+                  background:
+                    selectedCollectionName === 'none'
+                      ? 'rgba(var(--accent), 0.08)'
+                      : 'rgb(var(--background))',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                }}
+              >
+                No collection
+              </button>
+
+              {collections.map((collection) => (
+                <button
+                  key={collection.id}
+                  type="button"
+                  onClick={() => setSelectedCollectionName(collection.name)}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '999px',
+                    border:
+                      selectedCollectionName === collection.name
+                        ? '2px solid rgb(var(--accent))'
+                        : '1px solid rgb(var(--border))',
+                    background:
+                      selectedCollectionName === collection.name
+                        ? 'rgba(var(--accent), 0.08)'
+                        : 'rgb(var(--background))',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  {collection.name}
+                </button>
+              ))}
+
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.4rem',
+                  marginTop: '0.5rem',
+                }}
+              >
+                <label
+                  htmlFor="new-collection-name"
+                  style={{
+                    fontSize: '0.8rem',
+                    color: 'rgb(var(--muted-foreground))',
+                  }}
+                >
+                  Or create a new collection
+                </label>
+                <input
+                  id="new-collection-name"
+                  type="text"
+                  value={newCollectionName}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setNewCollectionName(value);
+                    if (value.trim()) {
+                      setSelectedCollectionName('__new__');
+                    } else if (selectedCollectionName === '__new__') {
+                      setSelectedCollectionName('none');
+                    }
+                  }}
+                  placeholder="Collection name"
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '999px',
+                    border: '1px solid rgb(var(--input))',
+                    background: 'rgb(var(--background))',
+                    color: 'rgb(var(--foreground))',
+                    fontSize: '0.9rem',
+                  }}
+                />
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '0.75rem',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSaveDialogOpen(false);
+                  setSaveDialogPost(null);
+                }}
+                style={{
+                  padding: '0.45rem 1.1rem',
+                  borderRadius: '999px',
+                  border: '1px solid rgb(var(--border))',
+                  background: 'rgb(var(--background))',
+                  color: 'rgb(var(--foreground))',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              {savedPostIds.has(saveDialogPost.id) && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!user || !saveDialogPost) return;
+                    try {
+                      const token = await user.getIdToken();
+                      await feedServices.toggleSavedPost(token, saveDialogPost.id);
+                      await refreshSavedState(token);
+                    } catch (error) {
+                      console.error('Failed to remove saved post', error);
+                    } finally {
+                      setIsSaveDialogOpen(false);
+                      setSaveDialogPost(null);
+                    }
+                  }}
+                  style={{
+                    padding: '0.45rem 1.1rem',
+                    borderRadius: '999px',
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    background: 'rgba(239, 68, 68, 0.06)',
+                    color: 'rgb(239, 68, 68)',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Remove saved post
+                </button>
+              )}
+              <PostButton
+                type="button"
+                onClick={confirmSaveToCollection}
+                disabled={selectedCollectionName === '__new__' && !newCollectionName.trim()}
+              >
+                Save
+              </PostButton>
             </div>
           </ModalContent>
         </ModalOverlay>

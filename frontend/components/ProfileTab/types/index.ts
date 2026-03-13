@@ -5,6 +5,7 @@ export interface UserProfile {
   displayName?: string;
   bio?: string;
   avatarUrl?: string;
+  coverUrl?: string;
   createdAt: string;
   followersCount: number;
   followingCount: number;
@@ -27,10 +28,12 @@ export interface UpdateProfileForm {
   displayName: string;
   bio: string;
   avatar?: FileList;
+  cover?: FileList;
 }
 
 export interface UpdateProfilePayload {
   displayName: string;
   bio: string;
   avatarUrl?: string;
+  coverUrl?: string;
 }

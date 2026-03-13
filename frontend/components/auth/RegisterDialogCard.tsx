@@ -24,13 +24,17 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import type { RegisterFormData, RegisterDialogCardProps } from './types';
+import { RegisterFormData, RegisterDialogCardProps, countryCodes } from './types/types';
 
 export function RegisterDialogCard({ onSuccess }: RegisterDialogCardProps) {
   const [error, setError] = useState('');
+  const [step, setStep] = useState<1 | 2>(1);
+  const [phonePrefix, setPhonePrefix] = useState('+389');
   const {
     register: registerField,
     handleSubmit,
+    watch,
+    trigger,
     formState: { isSubmitting },
   } = useForm<RegisterFormData>();
 
@@ -40,8 +44,43 @@ export function RegisterDialogCard({ onSuccess }: RegisterDialogCardProps) {
   const onSubmit = async (data: RegisterFormData) => {
     setError('');
 
-    if (data.password !== data.confirmPassword) {
-      setError('Passwords do not match');
+    if (!data.birthDate) {
+      setError('Please enter your date of birth');
+      return;
+    }
+
+    const birth = new Date(data.birthDate);
+    if (Number.isNaN(birth.getTime())) {
+      setError('Invalid date of birth');
+      return;
+    }
+
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+
+    if (age < 10) {
+      setError('You must be at least 10 years old to register');
+      return;
+    }
+
+    const email = data.email?.trim();
+    if (!email) {
+      setError('Please enter your email');
+      return;
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (!data.password) {
+      setError('Please enter a password');
       return;
     }
 
@@ -50,8 +89,18 @@ export function RegisterDialogCard({ onSuccess }: RegisterDialogCardProps) {
       return;
     }
 
+    if (data.password !== data.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     try {
-      await registerUser(data.email, data.password, data.username);
+      await registerUser(
+        email,
+        data.password,
+        data.username,
+        data.birthDate,
+      );
       onSuccess?.();
       router.push('/home');
     } catch (err: any) {
@@ -73,85 +122,195 @@ export function RegisterDialogCard({ onSuccess }: RegisterDialogCardProps) {
         )}
       </CardHeader>
       <CardContent>
-        <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+        <form
+          className="space-y-5"
+          onSubmit={handleSubmit(onSubmit)}
+        >
           <FieldGroup>
-            <Field>
-              <FieldContent>
-                <FieldTitle>Username</FieldTitle>
-                <FieldDescription>
-                  This is how others will see you on X.
-                </FieldDescription>
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="your_handle"
-                  autoComplete="username"
-                  {...registerField('username', { required: true })}
-                />
-              </FieldContent>
-            </Field>
+            {step === 1 && (
+              <>
+                <Field>
+                  <FieldContent>
+                    <FieldTitle>Username</FieldTitle>
+                    <FieldDescription>
+                      This is how others will see you on X.
+                    </FieldDescription>
+                    <Input
+                      id="username"
+                      type="text"
+                      placeholder="your_handle"
+                      autoComplete="username"
+                      {...registerField('username', { required: true })}
+                    />
+                  </FieldContent>
+                </Field>
 
-            <Field>
-              <FieldContent>
-                <FieldTitle>Email</FieldTitle>
-                <FieldDescription>
-                  We&apos;ll send confirmations and updates here.
-                </FieldDescription>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  {...registerField('email', { required: true })}
-                />
-              </FieldContent>
-            </Field>
+                <Field>
+                  <FieldContent>
+                    <FieldTitle>Phone</FieldTitle>
+                    <FieldDescription>
+                      Add a phone number so friends can find you.
+                    </FieldDescription>
+                    <div className="flex gap-2">
+                      <select
+                        className="w-28 rounded-md border border-input bg-background px-2 py-2 text-sm text-foreground shadow-sm"
+                        value={phonePrefix}
+                        onChange={(e) => setPhonePrefix(e.target.value)}
+                      >
+                        {/* make it dynamic based on the country code */}
+                        {countryCodes.map((country) => (
+                          <option key={country.code} value={country.code}>
+                            {country.name} +{country.code}
+                          </option>
+                        ))}
+                      </select>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="70 000 000"
+                        autoComplete="tel"
+                        {...registerField('phone', { required: true })}
+                      />
+                    </div>
+                  </FieldContent>
+                </Field>
 
-            <Field>
-              <FieldContent>
-                <FieldTitle>Password</FieldTitle>
-                <FieldDescription>Use at least 6 characters.</FieldDescription>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                  {...registerField('password', {
-                    required: true,
-                    minLength: 6,
-                  })}
-                />
-              </FieldContent>
-            </Field>
+                <Field>
+                  <FieldContent>
+                    <FieldTitle>Date of birth</FieldTitle>
+                    <FieldDescription>
+                      You must be at least 10 years old to use this app.
+                    </FieldDescription>
+                    <Input
+                      id="birthDate"
+                      type="date"
+                      {...registerField('birthDate', { required: true })}
+                    />
+                  </FieldContent>
+                </Field>
+              </>
+            )}
 
-            <Field>
-              <FieldContent>
-                <FieldTitle>Confirm password</FieldTitle>
-                <FieldDescription>
-                  Re-enter your password to confirm.
-                </FieldDescription>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                  {...registerField('confirmPassword', { required: true })}
-                />
-              </FieldContent>
-            </Field>
+            {step === 2 && (
+              <>
+                <Field>
+                  <FieldContent>
+                    <FieldTitle>Email</FieldTitle>
+                    <FieldDescription>
+                      We&apos;ll send confirmations and updates here.
+                    </FieldDescription>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      autoComplete="email"
+                      {...registerField('email', { required: true })}
+                    />
+                  </FieldContent>
+                </Field>
+
+                <Field>
+                  <FieldContent>
+                    <FieldTitle>Password</FieldTitle>
+                    <FieldDescription>
+                      Use at least 6 characters.
+                    </FieldDescription>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      {...registerField('password', {
+                        required: true,
+                        minLength: 6,
+                      })}
+                    />
+                  </FieldContent>
+                </Field>
+
+                <Field>
+                  <FieldContent>
+                    <FieldTitle>Confirm password</FieldTitle>
+                    <FieldDescription>
+                      Re-enter your password to confirm.
+                    </FieldDescription>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      {...registerField('confirmPassword', { required: true })}
+                    />
+                  </FieldContent>
+                </Field>
+              </>
+            )}
 
             <Field>
               <FieldError errors={error ? [{ message: error }] : []} />
             </Field>
           </FieldGroup>
 
-          <Button
-            type="submit"
-            className="w-full rounded-full text-base font-semibold"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Creating profile…' : 'Create profile'}
-          </Button>
+          {step === 1 && (
+            <Button
+              type="button"
+              className="w-full rounded-full text-base font-semibold"
+              onClick={async () => {
+                setError('');
+                const valid = await trigger(['username', 'phone', 'birthDate']);
+                if (!valid) return;
+
+                const birthDate = watch('birthDate');
+                if (!birthDate) {
+                  setError('Please enter your date of birth');
+                  return;
+                }
+
+                const birth = new Date(birthDate);
+                if (Number.isNaN(birth.getTime())) {
+                  setError('Invalid date of birth');
+                  return;
+                }
+
+                const today = new Date();
+                let age = today.getFullYear() - birth.getFullYear();
+                const m = today.getMonth() - birth.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+                  age--;
+                }
+
+                if (age < 10) {
+                  setError('You must be at least 10 years old to register');
+                  return;
+                }
+
+                setStep(2);
+              }}
+            >
+              Next
+            </Button>
+          )}
+
+          {step === 2 && (
+            <div className="flex w-full gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-1/3 rounded-full text-base font-semibold"
+                onClick={() => setStep(1)}
+                disabled={isSubmitting}
+              >
+                Back
+              </Button>
+              <Button
+                type="submit"
+                className="w-2/3 rounded-full text-base font-semibold"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Creating profile…' : 'Create profile'}
+              </Button>
+            </div>
+          )}
         </form>
       </CardContent>
       <CardFooter className="justify-center space-x-2 text-sm">

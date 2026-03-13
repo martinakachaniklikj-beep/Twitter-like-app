@@ -123,6 +123,17 @@ NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
 ```
 
+## Rate limiting and third‑party APIs
+
+To prevent accidental cost explosions in production, the backend now enforces rate limiting around all API traffic and, more strictly, around the routes that call paid third‑party providers:
+
+- **Global backend limit:** `ThrottlerModule` applies a default limit of **60 requests per 60 seconds per client** across all REST controllers. Clients exceeding this will receive `429 Too Many Requests`.
+- **Gemini AI (`/geminiAi/*`):** All Gemini‑backed endpoints (post suggestions, inspiration, moderation, hashtag checks, text fixes, image descriptions, Kitty Bot chat) are further capped at **20 requests per 60 seconds per client**, reducing the risk of runaway Google Generative AI usage.
+- **Stocks (`/stocks/:symbol`, `/stocks/:symbol/history`):** These endpoints proxy to the **Alpha Vantage** stock API and are limited to **5 requests per 60 seconds per client** to stay aligned with typical free‑tier limits.
+- **Football matches (`/matches`, `/matches/:id`):** These endpoints use the **API‑Sports (football)** provider and are limited to **10 requests per 60 seconds per client**.
+
+Client‑side integrations such as **Giphy** GIF search are triggered manually from the UI and use the browser to call Giphy with your API key; they are not currently backed by server‑side rate limiting, so you should provision the Giphy key with suitable limits/quotas in your Giphy account.
+
 ## Running the Application
 
 ### Start Backend Server

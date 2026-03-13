@@ -5,30 +5,19 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChatSocket } from "@/contexts/ChatSocketContext";
 import { chatServices, type ApiMessage } from "@/services/chatServices";
-import type { Message, ChatAttachment } from "./types";
+import type { Message, ChatAttachment, MessageContentPayload } from "./types";
+import { parseMessageContent } from "./utilities/utility";
 import { storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-export type MessageContentPayload = {
-  text?: string;
-  attachments?: ChatAttachment[];
-};
+export { parseMessageContent } from "./utilities/utility";
 
-export function parseMessageContent(content: string): { text: string; attachments?: ChatAttachment[] } {
-  try {
-    const parsed = JSON.parse(content) as MessageContentPayload;
-    if (parsed && typeof parsed === "object") {
-      const text = typeof parsed.text === "string" ? parsed.text : "";
-      const attachments = Array.isArray(parsed.attachments) ? parsed.attachments : undefined;
-      if (text || attachments?.length) {
-        return { text, attachments };
-      }
-    }
-  } catch {
-    // Fallback to plain text if not JSON
-  }
-  return { text: content };
-}
+const MAX_MESSAGE_TEXT_LENGTH = 2000;
+const MAX_ATTACHMENTS_PER_MESSAGE = 5;
+// 50 MB per attachment
+const MAX_ATTACHMENT_SIZE_BYTES = 50 * 1024 * 1024;
+// 200 MB total across all attachments
+const MAX_TOTAL_ATTACHMENTS_SIZE_BYTES = 200 * 1024 * 1024;
 
 function apiMessageToMessage(m: ApiMessage): Message {
   const { text, attachments } = parseMessageContent(m.content);
@@ -65,11 +54,13 @@ export function useChat(conversationId: string | null) {
     leaveConversation,
     sendMessage: socketSend,
     onMessageNew,
+    onTyping,
   } = useChatSocket();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [isOtherTyping, setIsOtherTyping] = useState(false);
   const currentUserId = user?.uid ?? undefined;
   const hasMoreRef = useRef(true);
   const queryClient = useQueryClient();
@@ -125,6 +116,34 @@ export function useChat(conversationId: string | null) {
     return unsub;
   }, [conversationId, onMessageNew, queryClient]);
 
+  useEffect(() => {
+    if (!conversationId || !currentUserId) return;
+
+    const unsub = onTyping((data) => {
+      if (data.conversationId !== conversationId) return;
+      if (data.userId === currentUserId) return;
+      setIsOtherTyping(!!data.isTyping);
+    });
+
+    return () => {
+      unsub();
+      setIsOtherTyping(false);
+    };
+  }, [conversationId, currentUserId, onTyping]);
+
+  const markMessagesReadOptimistic = useCallback(() => {
+    if (!conversationId || !currentUserId) return;
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.conversationId === conversationId &&
+        m.senderId !== currentUserId &&
+        m.status === "sent"
+          ? { ...m, status: "read" }
+          : m
+      )
+    );
+  }, [conversationId, currentUserId]);
+
   const sendMessage = useCallback(
     async (text: string, files?: File[]) => {
       const trimmed = text.trim();
@@ -132,10 +151,39 @@ export function useChat(conversationId: string | null) {
       if (!trimmed && !hasFiles) return;
       if (!currentUserId || !conversationId) return;
 
-      const validFiles = (files ?? []).filter((file) => {
-        // Allow only images and videos for now
-        return file.type.startsWith("image/") || file.type.startsWith("video/");
+      if (trimmed.length > MAX_MESSAGE_TEXT_LENGTH) {
+        console.warn(
+          `Message is too long. Maximum length is ${MAX_MESSAGE_TEXT_LENGTH} characters.`
+        );
+        return;
+      }
+
+      const allFiles = Array.isArray(files) ? files : [];
+      if (allFiles.length > MAX_ATTACHMENTS_PER_MESSAGE) {
+        console.warn(
+          `Too many attachments. Maximum is ${MAX_ATTACHMENTS_PER_MESSAGE} per message.`
+        );
+        return;
+      }
+
+      const validFiles = allFiles.filter((file) => {
+        const isSupported =
+          file.type.startsWith("image/") ||
+          file.type.startsWith("video/") ||
+          file.type.startsWith("audio/");
+        const isWithinSize = file.size <= MAX_ATTACHMENT_SIZE_BYTES;
+        return isSupported && isWithinSize;
       });
+
+      const totalSize = validFiles.reduce((sum, file) => sum + file.size, 0);
+      if (totalSize > MAX_TOTAL_ATTACHMENTS_SIZE_BYTES) {
+        console.warn(
+          `Attachments are too large in total. Maximum is ${(MAX_TOTAL_ATTACHMENTS_SIZE_BYTES / (1024 * 1024)).toFixed(
+            0
+          )} MB per message.`
+        );
+        return;
+      }
 
       const optimisticAttachments: ChatAttachment[] = validFiles.map((file) => ({
         url: URL.createObjectURL(file),
@@ -176,26 +224,33 @@ export function useChat(conversationId: string | null) {
 
       const serializedContent = JSON.stringify(payload);
 
-      const result = await socketSend(conversationId, serializedContent);
+      try {
+        const result = await socketSend(conversationId, serializedContent);
 
-      if (result.error) {
+        if (result.error) {
+          setMessages((prev) => prev.filter((m) => m.id !== tempId));
+          return;
+        }
+        if (result.message) {
+          // Replace optimistic message with the authoritative server message
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === tempId ? apiMessageToMessage(result.message!) : m
+            )
+          );
+        } else {
+          // Fallback: just mark as sent if no message payload is returned
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === tempId ? { ...m, status: "sent" as const } : m
+            )
+          );
+        }
+      } catch (err) {
+        console.error("Failed to send chat message", err);
+        // Remove optimistic message on hard failure
         setMessages((prev) => prev.filter((m) => m.id !== tempId));
         return;
-      }
-      if (result.message) {
-        // Replace optimistic message with the authoritative server message
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === tempId ? apiMessageToMessage(result.message!) : m
-          )
-        );
-      } else {
-        // Fallback: just mark as sent if no message payload is returned
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === tempId ? { ...m, status: "sent" as const } : m
-          )
-        );
       }
       // Ensure sidebar reflects the latest message
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
@@ -229,5 +284,7 @@ export function useChat(conversationId: string | null) {
     currentUserId,
     loading,
     loadingMore,
+    isOtherTyping,
+    markMessagesReadOptimistic,
   };
 }

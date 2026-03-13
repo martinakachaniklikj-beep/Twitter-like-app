@@ -13,6 +13,7 @@ type ComposerAction =
   | { type: "CLEAR_FILES" }
   | { type: "SET_IMAGE_URL"; imageUrl?: string }
   | { type: "SET_GIF_URL"; gifUrl?: string }
+  | { type: "REMOVE_FILE"; index: number }
   | { type: "RESET" };
 
 const initialState: ComposerState = {
@@ -27,6 +28,11 @@ function composerReducer(state: ComposerState, action: ComposerAction): Composer
       return { ...state, files: [...state.files, ...action.files] };
     case "CLEAR_FILES":
       return { ...state, files: [] };
+    case "REMOVE_FILE":
+      return {
+        ...state,
+        files: state.files.filter((_, i) => i !== action.index),
+      };
     case "SET_IMAGE_URL":
       return { ...state, imageUrl: action.imageUrl };
     case "SET_GIF_URL":

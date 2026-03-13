@@ -41,7 +41,7 @@ export const ResultsDropdown = styled.div`
   top: calc(100% + 0.5rem);
   left: 0;
   right: 0;
-  background: rgb(var(--card));
+  background: #ffffff;
   border: 1px solid rgb(var(--border));
   border-radius: 0.5rem;
   max-height: 20rem;

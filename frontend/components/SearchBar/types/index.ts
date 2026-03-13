@@ -3,4 +3,5 @@ export interface SearchResult {
   username: string;
   displayName?: string;
   bio?: string;
+  avatarUrl?: string | null;
 }

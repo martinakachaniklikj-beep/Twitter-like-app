@@ -1,0 +1,18 @@
+export const RegisterLabels = {
+    title: 'Create Account',
+    subtitle: 'Join Twitter today',
+    usernameLabel: 'Username',
+    subtitle2: 'Create a profile to follow people and join the conversation.',
+    usernamePlaceholder: 'johndoe',
+    emailLabel: 'Email',
+    emailPlaceholder: 'you@example.com',
+    passwordLabel: 'Password',
+    passwordPlaceholder: '••••••••',
+    confirmPasswordLabel: 'Confirm Password',
+    confirmPasswordPlaceholder: '••••••••',
+    submitButton: 'Sign Up',
+    submittingButton: 'Creating account...',
+    haveAccount: 'Already have an account? ',
+    signInLink: 'Sign in',
+    imagePlaceholder: 'Image placeholder',
+  } as const;

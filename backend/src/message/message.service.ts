@@ -1,9 +1,20 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notification.service';
 
 @Injectable()
 export class MessageService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
+
+  private readonly MAX_MESSAGE_TEXT_LENGTH = 2000;
+  private readonly MAX_ATTACHMENTS_PER_MESSAGE = 5;
+  // 50 MB per attachment
+  private readonly MAX_ATTACHMENT_SIZE_BYTES = 50 * 1024 * 1024;
+  // 200 MB combined across all attachments
+  private readonly MAX_TOTAL_ATTACHMENTS_SIZE_BYTES = 200 * 1024 * 1024;
 
   async create(conversationId: string, senderId: string, content: string) {
     const participant = await this.prisma.conversationParticipant.findUnique({
@@ -16,16 +27,195 @@ export class MessageService {
       throw new ForbiddenException('Not a participant of this conversation');
     }
 
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: {
+        participants: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    if (conversation.type === 'direct') {
+      const other = conversation.participants.find((p) => p.userId !== senderId);
+      if (other) {
+        const block = await (this.prisma as any).block.findFirst({
+          where: {
+            OR: [
+              {
+                blockerId: senderId,
+                blockedId: other.userId,
+              },
+              {
+                blockerId: other.userId,
+                blockedId: senderId,
+              },
+            ],
+          },
+        });
+
+        if (block) {
+          throw new ForbiddenException(
+            'You cannot send messages in this conversation because one of you has blocked the other.',
+          );
+        }
+      }
+    }
+
+    const trimmedContent = content.trim();
+
+    if (!trimmedContent) {
+      throw new BadRequestException('Message content cannot be empty');
+    }
+
+    // Content is usually a JSON payload with { text, attachments }
+    // but we are defensive in case plain strings are sent.
+    let text: string = trimmedContent;
+    let attachments: Array<{ size?: number }> = [];
+
+    try {
+      const parsed = JSON.parse(trimmedContent) as any;
+      if (parsed && typeof parsed === 'object') {
+        if (typeof parsed.text === 'string') {
+          text = parsed.text;
+        }
+        if (Array.isArray(parsed.attachments)) {
+          attachments = parsed.attachments;
+        }
+      }
+    } catch {
+      // not JSON, fall back to raw text
+    }
+
+    const safeText = (text ?? '').trim();
+
+    if (safeText.length > this.MAX_MESSAGE_TEXT_LENGTH) {
+      throw new BadRequestException(
+        `Message is too long (max ${this.MAX_MESSAGE_TEXT_LENGTH} characters).`,
+      );
+    }
+
+    if (attachments.length > this.MAX_ATTACHMENTS_PER_MESSAGE) {
+      throw new BadRequestException(
+        `Too many attachments (max ${this.MAX_ATTACHMENTS_PER_MESSAGE} per message).`,
+      );
+    }
+
+    const sizes = attachments
+      .map((a) => (typeof a.size === 'number' && a.size > 0 ? a.size : 0))
+      .filter((s) => s > 0);
+
+    if (sizes.some((s) => s > this.MAX_ATTACHMENT_SIZE_BYTES)) {
+      throw new BadRequestException(
+        `Attachments must be smaller than ${(this.MAX_ATTACHMENT_SIZE_BYTES / (1024 * 1024)).toFixed(
+          0,
+        )} MB each.`,
+      );
+    }
+
+    const totalSize = sizes.reduce((sum, s) => sum + s, 0);
+    if (totalSize > this.MAX_TOTAL_ATTACHMENTS_SIZE_BYTES) {
+      throw new BadRequestException(
+        `Attachments are too large in total (max ${(this.MAX_TOTAL_ATTACHMENTS_SIZE_BYTES / (1024 * 1024)).toFixed(
+          0,
+        )} MB per message).`,
+      );
+    }
+
     const message = await this.prisma.message.create({
       data: {
         conversationId,
         senderId,
-        content: content.trim(),
+        content: trimmedContent,
       },
       include: {
         sender: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
       },
     });
+
+    // Create notifications for other participants in the conversation
+    try {
+      const participants = await this.prisma.conversationParticipant.findMany({
+        where: {
+          conversationId,
+          userId: { not: senderId },
+        },
+        select: {
+          userId: true,
+        },
+      });
+
+      if (participants.length > 0) {
+        const participantIds = participants.map((p) => p.userId);
+
+        // Do not send notifications to users who have blocked the sender.
+        const blocks = await (this.prisma as any).block.findMany({
+          where: {
+            blockerId: { in: participantIds },
+            blockedId: senderId,
+          },
+        });
+
+        const recipients = participants.filter(
+          (p) => !blocks.some((b: any) => b.blockerId === p.userId && b.blockedId === senderId),
+        );
+
+        if (recipients.length === 0) {
+          return;
+        }
+
+        const sender = await this.prisma.user.findUnique({
+          where: { id: senderId },
+          select: {
+            username: true,
+            displayName: true,
+          },
+        });
+
+        const actorName = sender?.displayName || sender?.username || 'Someone';
+
+        const notificationMessage = `${actorName} sent you a message.`;
+
+        const notifications = await this.prisma.$transaction(
+          recipients.map((p) =>
+            (this.prisma as any).notification.create({
+              data: {
+                userId: p.userId,
+                type: 'message',
+                message: notificationMessage,
+              },
+            }),
+          ),
+        );
+
+        notifications.forEach((n: any) => {
+          this.notifications.broadcastInAppNotification(n.userId, n);
+        });
+
+        const targetUsers = await this.prisma.user.findMany({
+          where: { id: { in: recipients.map((p) => p.userId) } },
+          select: { id: true, fcmToken: true },
+        });
+
+        await Promise.all(
+          targetUsers.map((user) =>
+            this.notifications.sendPushNotification(
+              user.fcmToken,
+              'New message',
+              notificationMessage,
+            ),
+          ),
+        );
+      }
+    } catch {
+      // ignore notification failures
+    }
 
     await this.prisma.conversation.update({
       where: { id: conversationId },

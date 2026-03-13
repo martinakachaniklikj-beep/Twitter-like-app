@@ -163,6 +163,36 @@ export const FollowButton = styled.button<{ $isFollowing: boolean }>`
   }
 `;
 
+export const BlockButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #b91c1c;
+  background: #ef4444;
+  color: white;
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.1s;
+
+  &:hover {
+    background: #dc2626;
+    box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35);
+  }
+
+  &:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.4);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+`;
+
 export const Bio = styled.p`
   color: rgb(var(--foreground));
   margin-top: 0.75rem;
@@ -242,6 +272,35 @@ export const PostMeta = styled.div`
   align-items: center;
   gap: 1rem;
   font-size: 0.875rem;
+  color: rgb(var(--muted-foreground));
+`;
+
+
+export const BirthdayBanner = styled.div`
+  margin-top: 12px;
+  margin-bottom: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    rgba(251, 191, 36, 0.16),
+    rgba(59, 130, 246, 0.16)
+  );
+  border: 1px solid rgba(251, 191, 36, 0.4);
+`;
+
+export const BirthdayContent = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgb(var(--foreground));
+  font-size: 0.9rem;
+  font-weight: 500;
+`;
+
+export const BlockedMessage = styled.div`
+  margin-top: 16px;
+  font-size: 0.9rem;
   color: rgb(var(--muted-foreground));
 `;
 
