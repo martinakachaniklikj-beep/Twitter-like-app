@@ -2,12 +2,11 @@ FROM node:20
 
 WORKDIR /app
 
-# Copy root package files for workspace
+# Copy package files (they're at root of build context since rootDirectory is backend)
 COPY package.json yarn.lock ./
 
-# Copy backend-specific files including prisma schema (before yarn install so postinstall can run prisma generate)
-COPY backend/package.json backend/yarn.lock ./backend/
-COPY backend/prisma ./backend/prisma
+# Copy prisma schema before yarn install so postinstall can run prisma generate
+COPY prisma ./prisma
 
 RUN yarn install
 
