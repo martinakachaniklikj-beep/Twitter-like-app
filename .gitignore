@@ -59,6 +59,8 @@ temp_rest.txt
 # Project specific
 FIXES.md
 
+
+
 # Package manager lockfiles (optional - uncomment to ignore)
 # package-lock.json
 # yarn.lock
