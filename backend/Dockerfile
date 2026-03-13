@@ -16,4 +16,5 @@ RUN yarn build
 
 EXPOSE 3001
 
-CMD ["node", "dist/main.js"]
+# Run migrations against the connected DB, then start the app (DATABASE_URL set by Railway)
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
