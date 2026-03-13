@@ -12,4 +12,3 @@ export class BirthdayScheduler {
     await this.notifications.sendBirthdayNotificationsForToday();
   }
 }
-

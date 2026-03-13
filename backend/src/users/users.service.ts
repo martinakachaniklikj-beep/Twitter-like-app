@@ -210,9 +210,7 @@ export class UsersService {
         }
 
         if (age < 10) {
-          throw new BadRequestException(
-            'User must be at least 10 years old',
-          );
+          throw new BadRequestException('User must be at least 10 years old');
         }
 
         data.birthDate = d;
@@ -348,4 +346,3 @@ export class UsersService {
     return includeKitty ? [kittyBot, ...mutuals] : mutuals;
   }
 }
-

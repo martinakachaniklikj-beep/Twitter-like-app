@@ -26,7 +26,7 @@ import {
   HeroSubtitle,
   ActionsBlock,
   LoginText,
-  LoginButton
+  LoginButton,
 } from './page.styled';
 
 export default function HomePage() {
@@ -67,9 +67,7 @@ export default function HomePage() {
           <HeroTextBlock>
             <HeroTitle>Happening now</HeroTitle>
 
-            <HeroSubtitle>
-              Join X today and see what people are talking about.
-            </HeroSubtitle>
+            <HeroSubtitle>Join X today and see what people are talking about.</HeroSubtitle>
           </HeroTextBlock>
 
           <ActionsBlock>
@@ -83,9 +81,7 @@ export default function HomePage() {
 
             <LoginText>
               Already have an account?{' '}
-              <LoginButton onClick={() => handleOpen('login')}>
-                Sign in
-              </LoginButton>
+              <LoginButton onClick={() => handleOpen('login')}>Sign in</LoginButton>
             </LoginText>
           </ActionsBlock>
         </HeroSection>
@@ -101,10 +97,7 @@ export default function HomePage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={openDialog === 'login'}
-        onOpenChange={(open) => !open && setOpenDialog(null)}
-      >
+      <Dialog open={openDialog === 'login'} onOpenChange={(open) => !open && setOpenDialog(null)}>
         <DialogContent className="border border-border bg-background p-0 shadow-2xl ring-2 ring-foreground/10 sm:max-w-xl">
           <DialogTitle className="sr-only">Sign in</DialogTitle>
           <LoginDialogCard onSuccess={() => setOpenDialog(null)} />

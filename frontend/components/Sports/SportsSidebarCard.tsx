@@ -78,10 +78,7 @@ export function SportsSidebarCard() {
     const oneDayMs = 24 * 60 * 60 * 1000;
 
     const scoredRecent = matches.filter((m) => {
-      const hasScore =
-        m.stats &&
-        m.stats.home_score != null &&
-        m.stats.away_score != null;
+      const hasScore = m.stats && m.stats.home_score != null && m.stats.away_score != null;
 
       const start = new Date(m.match_start);
       if (Number.isNaN(start.getTime())) return hasScore;
@@ -98,10 +95,7 @@ export function SportsSidebarCard() {
   }, [matches]);
 
   const hasMatches = filteredMatches.length > 0;
-  const currentIndex =
-    hasMatches && activeIndex >= 0
-      ? activeIndex % filteredMatches.length
-      : 0;
+  const currentIndex = hasMatches && activeIndex >= 0 ? activeIndex % filteredMatches.length : 0;
   const currentMatch = hasMatches ? filteredMatches[currentIndex] : null;
 
   const goPrev = () => {
@@ -121,8 +115,7 @@ export function SportsSidebarCard() {
         padding: '0.95rem 1rem',
         borderRadius: '1rem',
         border: '1px solid rgba(var(--accent), 0.6)',
-        background:
-          'linear-gradient(135deg, rgba(var(--card), 0.75), rgba(22, 163, 74, 0.22))',
+        background: 'linear-gradient(135deg, rgba(var(--card), 0.75), rgba(22, 163, 74, 0.22))',
         backdropFilter: 'blur(22px)',
         position: 'relative',
         overflow: 'hidden',
@@ -173,7 +166,7 @@ export function SportsSidebarCard() {
           >
             {league === 'all'
               ? 'Top European leagues'
-              : LEAGUES.find(l => l.id === league)?.label ?? 'Top European leagues'}
+              : (LEAGUES.find((l) => l.id === league)?.label ?? 'Top European leagues')}
           </span>
         </div>
         <div
@@ -202,13 +195,8 @@ export function SportsSidebarCard() {
                     : '1px solid rgba(var(--border), 0.7)',
                 fontSize: '0.7rem',
                 background:
-                  league === l.id
-                    ? 'rgba(var(--primary), 0.14)'
-                    : 'rgba(var(--card), 0.95)',
-                color:
-                  league === l.id
-                    ? 'rgb(var(--primary))'
-                    : 'rgb(var(--muted-foreground))',
+                  league === l.id ? 'rgba(var(--primary), 0.14)' : 'rgba(var(--card), 0.95)',
+                color: league === l.id ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
               }}
@@ -306,9 +294,7 @@ export function SportsSidebarCard() {
                     lineHeight: 1.2,
                   }}
                 >
-                  {currentMatch.home_team?.short_code ||
-                    currentMatch.home_team?.name ||
-                    'Home'}
+                  {currentMatch.home_team?.short_code || currentMatch.home_team?.name || 'Home'}
                 </span>
               </div>
 
@@ -317,8 +303,7 @@ export function SportsSidebarCard() {
                   minWidth: 68,
                   minHeight: 52,
                   borderRadius: '0.9rem',
-                  background:
-                    'linear-gradient(145deg, rgba(15,23,42,0.98), rgba(30,64,175,0.9))',
+                  background: 'linear-gradient(145deg, rgba(15,23,42,0.98), rgba(30,64,175,0.9))',
                   border: '1px solid rgba(148, 163, 184, 0.7)', // keeps nice contrast in dark
                   display: 'flex',
                   flexDirection: 'column',
@@ -378,9 +363,7 @@ export function SportsSidebarCard() {
                     textAlign: 'right',
                   }}
                 >
-                  {currentMatch.away_team?.short_code ||
-                    currentMatch.away_team?.name ||
-                    'Away'}
+                  {currentMatch.away_team?.short_code || currentMatch.away_team?.name || 'Away'}
                 </span>
               </div>
             </div>
@@ -482,4 +465,3 @@ export function SportsSidebarCard() {
     </div>
   );
 }
-

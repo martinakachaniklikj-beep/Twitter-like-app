@@ -25,4 +25,3 @@ export function parseGroupInvite(notification: ApiNotification) {
   const [, inviteId, conversationId, groupName, actorName] = parts;
   return { inviteId, conversationId, groupName, actorName };
 }
-

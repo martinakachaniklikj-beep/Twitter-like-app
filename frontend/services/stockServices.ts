@@ -12,8 +12,12 @@ export interface StockHistoryPoint {
   close: number;
 }
 
+interface AlphaVantageQuote {
+  'Global Quote'?: Record<string, string | undefined>;
+}
+
 function mapApiResponse(symbol: string, data: unknown): StockQuote {
-  const quote = (data as any)?.['Global Quote'] ?? {};
+  const quote = (data as AlphaVantageQuote)?.['Global Quote'] ?? {};
 
   const price = quote['05. price'] != null ? Number(quote['05. price']) : null;
   const change = quote['09. change'] != null ? Number(quote['09. change']) : null;
@@ -51,7 +55,7 @@ export const stockServices = {
   },
 
   async fetchMultipleQuotes(symbols: string[]): Promise<StockQuote[]> {
-    const results = await Promise.all(symbols.map(symbol => this.fetchQuote(symbol)));
+    const results = await Promise.all(symbols.map((symbol) => this.fetchQuote(symbol)));
     return results.filter((q): q is StockQuote => q !== null);
   },
 
@@ -63,13 +67,14 @@ export const stockServices = {
         return [];
       }
       const data = await res.json();
-      const series = (data as any)?.['Time Series (Daily)'] ?? {};
-      const entries = Object.entries(series) as [string, any][];
+      const series =
+        (data as { 'Time Series (Daily)'?: Record<string, { '4. close'?: string }> })?.[
+          'Time Series (Daily)'
+        ] ?? {};
+      const entries = Object.entries(series) as [string, { '4. close'?: string }][];
 
       // Newest first from API; we want chronological order and limited points
-      const sorted = entries
-        .sort(([a], [b]) => (a < b ? -1 : 1))
-        .slice(-maxPoints);
+      const sorted = entries.sort(([a], [b]) => (a < b ? -1 : 1)).slice(-maxPoints);
 
       return sorted
         .map(([date, value]) => {
@@ -85,4 +90,3 @@ export const stockServices = {
     }
   },
 };
-

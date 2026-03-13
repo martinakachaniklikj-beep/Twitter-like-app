@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { MessageService } from './message.service';
 import { FirebaseAuthGuard } from '../firebase/firebase-auth.guard';
@@ -34,6 +43,10 @@ export class MessageController {
     @Param('conversationId') conversationId: string,
     @Body('content') content: string,
   ) {
-    return this.messageService.create(conversationId, req.user.uid, content ?? '');
+    return this.messageService.create(
+      conversationId,
+      req.user.uid,
+      content ?? '',
+    );
   }
 }

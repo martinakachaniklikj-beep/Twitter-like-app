@@ -13,4 +13,3 @@ export interface KittyBotChatProps {
    */
   variant?: 'compact' | 'full';
 }
-

@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { FirebaseAuthGuard } from '../firebase/firebase-auth.guard';
 import { SearchHistoryService } from './search-history.service';
@@ -52,4 +61,3 @@ export class SearchHistoryController {
     return this.searchHistoryService.clearHistory(req.user.uid);
   }
 }
-

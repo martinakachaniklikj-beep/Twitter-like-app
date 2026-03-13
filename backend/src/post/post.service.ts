@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../geminiAi/ai.service';
 
@@ -25,7 +30,9 @@ export class PostService {
     const { content, imageUrl, gifUrl, originalPostId, poll } = dto;
 
     if (!originalPostId && !content && !imageUrl && !gifUrl && !poll) {
-      throw new BadRequestException('Post must have content, image, GIF or poll');
+      throw new BadRequestException(
+        'Post must have content, image, GIF or poll',
+      );
     }
 
     if (!originalPostId) {
@@ -40,7 +47,9 @@ export class PostService {
         });
 
         if (poll) {
-          const trimmedOptions = (poll.options ?? []).map((o) => o.trim()).filter(Boolean);
+          const trimmedOptions = (poll.options ?? [])
+            .map((o) => o.trim())
+            .filter(Boolean);
           if (trimmedOptions.length < 2) {
             throw new BadRequestException('Poll must have at least 2 options');
           }
@@ -51,7 +60,9 @@ export class PostService {
           }
 
           if (expiresAt <= new Date()) {
-            throw new BadRequestException('Poll expiry time must be in the future');
+            throw new BadRequestException(
+              'Poll expiry time must be in the future',
+            );
           }
 
           const createdPoll = await (tx as any).poll.create({
@@ -80,7 +91,7 @@ export class PostService {
       const mentionsKittyBot = !!content && /@kittybot\b/i.test(content);
       if (mentionsKittyBot) {
         // Fire and forget; errors are handled inside
-        void this.handleKittyBotReplyForPost(post.id, content!);
+        void this.handleKittyBotReplyForPost(post.id, content);
       }
 
       return post;
@@ -124,7 +135,6 @@ export class PostService {
 
     return repost;
   }
-
 
   async findAll(page: number, limit: number, currentUserId?: string) {
     const skip = (page - 1) * limit;
@@ -193,9 +203,7 @@ export class PostService {
       }),
     ]);
 
-    const data = posts.map((post) =>
-      this.formatPost(post, currentUserId),
-    );
+    const data = posts.map((post) => this.formatPost(post, currentUserId));
 
     return {
       data,
@@ -205,7 +213,6 @@ export class PostService {
       hasMore: skip + posts.length < total,
     };
   }
-
 
   async getFeed(
     userId: string,
@@ -310,19 +317,19 @@ export class PostService {
         comments: true,
         reposts: true,
         originalPost: {
-            include: {
-              user: true,
-              poll: {
-                include: {
-                  options: {
-                    include: {
-                      votes: true,
-                    },
+          include: {
+            user: true,
+            poll: {
+              include: {
+                options: {
+                  include: {
+                    votes: true,
                   },
                 },
               },
             },
           },
+        },
         poll: {
           include: {
             options: {
@@ -342,7 +349,6 @@ export class PostService {
 
     return posts.map((post) => this.formatPost(post));
   }
-
 
   async findOne(id: string) {
     const post = await (this.prisma as any).post.findUnique({
@@ -559,7 +565,9 @@ export class PostService {
       return;
     }
 
-    const uniqueNames = Array.from(new Set(hashtags.map((tag) => tag.toLowerCase())));
+    const uniqueNames = Array.from(
+      new Set(hashtags.map((tag) => tag.toLowerCase())),
+    );
 
     await this.prisma.$transaction(async (tx) => {
       const existing = await (tx as any).hashtag.findMany({
@@ -630,8 +638,10 @@ export class PostService {
         replyText.trim() ||
         'Meow! My whiskers got a bit tangled there. Try asking me again in a slightly different way.';
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to generate Kitty Bot reply for post mention', error);
+      console.error(
+        'Failed to generate Kitty Bot reply for post mention',
+        error,
+      );
       replyText =
         'Meow! I tried to reply but something went wrong. Please try tagging me again in a moment.';
     }
@@ -657,42 +667,44 @@ export class PostService {
       random: 0.1,
     } as const;
 
-    let followingTarget = Math.round(limit * percentages.following);
-    let recommendedTarget = Math.round(limit * percentages.recommended);
-    let trendingTarget = Math.round(limit * percentages.trending);
-    let randomTarget = limit - followingTarget - recommendedTarget - trendingTarget;
+    const followingTarget = Math.round(limit * percentages.following);
+    const recommendedTarget = Math.round(limit * percentages.recommended);
+    const trendingTarget = Math.round(limit * percentages.trending);
+    let randomTarget =
+      limit - followingTarget - recommendedTarget - trendingTarget;
 
     if (randomTarget < 0) {
       randomTarget = 0;
     }
 
     // Fetch relationships and interests up front
-    const [followingEdges, userLikedHashtags, userOwnPostHashtags] = await Promise.all([
-      (this.prisma as any).follow.findMany({
-        where: { followerId: userId },
-        select: { followingId: true },
-      }),
-      (this.prisma as any).like.findMany({
-        where: { userId },
-        select: {
-          post: {
-            select: {
-              hashtags: {
-                select: { hashtag: { select: { name: true } } },
+    const [followingEdges, userLikedHashtags, userOwnPostHashtags] =
+      await Promise.all([
+        (this.prisma as any).follow.findMany({
+          where: { followerId: userId },
+          select: { followingId: true },
+        }),
+        (this.prisma as any).like.findMany({
+          where: { userId },
+          select: {
+            post: {
+              select: {
+                hashtags: {
+                  select: { hashtag: { select: { name: true } } },
+                },
               },
             },
           },
-        },
-      }),
-      (this.prisma as any).post.findMany({
-        where: { userId },
-        select: {
-          hashtags: {
-            select: { hashtag: { select: { name: true } } },
+        }),
+        (this.prisma as any).post.findMany({
+          where: { userId },
+          select: {
+            hashtags: {
+              select: { hashtag: { select: { name: true } } },
+            },
           },
-        },
-      }),
-    ]);
+        }),
+      ]);
 
     const followingIds = new Set(
       followingEdges.map((f: { followingId: string }) => f.followingId),
@@ -734,219 +746,220 @@ export class PostService {
 
     const trendingSince = new Date(now.getTime() - 1000 * 60 * 60 * 48); // last 48h
 
-    const [followingPosts, recommendedPosts, trendingPosts, randomPosts] = await Promise.all([
-      // Following (including own posts)
-      (this.prisma as any).post.findMany({
-        where: {
-          OR: [
-            { userId },
-            {
-              user: {
-                followers: {
-                  some: { followerId: userId },
-                },
-              },
-            },
-          ],
-          ...userFilter,
-        },
-        orderBy: { createdAt: 'desc' },
-        skip: baseSkip,
-        take: followingTarget * oversampleFactor,
-        include: {
-          user: true,
-          likes: true,
-          comments: true,
-          reposts: true,
-          originalPost: {
-            include: {
-              user: true,
-              poll: {
-                include: {
-                  options: {
-                    include: {
-                      votes: true,
-                    },
+    const [followingPosts, recommendedPosts, trendingPosts, randomPosts] =
+      await Promise.all([
+        // Following (including own posts)
+        (this.prisma as any).post.findMany({
+          where: {
+            OR: [
+              { userId },
+              {
+                user: {
+                  followers: {
+                    some: { followerId: userId },
                   },
                 },
               },
-            },
+            ],
+            ...userFilter,
           },
-          poll: {
-            include: {
-              options: {
-                include: {
-                  votes: true,
-                },
-              },
-            },
-          },
-          hashtags: {
-            include: {
-              hashtag: true,
-            },
-          },
-        },
-      }),
-
-      // Recommended: not followed and not self, but sharing interest hashtags
-      (this.prisma as any).post.findMany({
-        where: {
-          userId: {
-            notIn: [...followingIds, userId],
-          },
-          ...(interestHashtags.size
-            ? {
-                hashtags: {
-                  some: {
-                    hashtag: {
-                      name: {
-                        in: Array.from(interestHashtags),
+          orderBy: { createdAt: 'desc' },
+          skip: baseSkip,
+          take: followingTarget * oversampleFactor,
+          include: {
+            user: true,
+            likes: true,
+            comments: true,
+            reposts: true,
+            originalPost: {
+              include: {
+                user: true,
+                poll: {
+                  include: {
+                    options: {
+                      include: {
+                        votes: true,
                       },
                     },
                   },
                 },
-              }
-            : {}),
-          ...userFilter,
-        },
-        orderBy: { createdAt: 'desc' },
-        skip: baseSkip,
-        take: recommendedTarget * oversampleFactor,
-        include: {
-          user: true,
-          likes: true,
-          comments: true,
-          reposts: true,
-          originalPost: {
-            include: {
-              user: true,
-              poll: {
-                include: {
-                  options: {
-                    include: {
-                      votes: true,
-                    },
+              },
+            },
+            poll: {
+              include: {
+                options: {
+                  include: {
+                    votes: true,
                   },
                 },
               },
             },
-          },
-          poll: {
-            include: {
-              options: {
-                include: {
-                  votes: true,
-                },
+            hashtags: {
+              include: {
+                hashtag: true,
               },
             },
           },
-          hashtags: {
-            include: {
-              hashtag: true,
-            },
-          },
-        },
-      }),
+        }),
 
-      // Trending: globally popular in last 48h (by likes/comments, then recency)
-      (this.prisma as any).post.findMany({
-        where: {
-          createdAt: {
-            gte: trendingSince,
+        // Recommended: not followed and not self, but sharing interest hashtags
+        (this.prisma as any).post.findMany({
+          where: {
+            userId: {
+              notIn: [...followingIds, userId],
+            },
+            ...(interestHashtags.size
+              ? {
+                  hashtags: {
+                    some: {
+                      hashtag: {
+                        name: {
+                          in: Array.from(interestHashtags),
+                        },
+                      },
+                    },
+                  },
+                }
+              : {}),
+            ...userFilter,
           },
-          ...userFilter,
-        },
-        orderBy: [
-          { likes: { _count: 'desc' } } as any,
-          { comments: { _count: 'desc' } } as any,
-          { createdAt: 'desc' },
-        ],
-        skip: baseSkip,
-        take: trendingTarget * oversampleFactor,
-        include: {
-          user: true,
-          likes: true,
-          comments: true,
-          reposts: true,
-          originalPost: {
-            include: {
-              user: true,
-              poll: {
-                include: {
-                  options: {
-                    include: {
-                      votes: true,
+          orderBy: { createdAt: 'desc' },
+          skip: baseSkip,
+          take: recommendedTarget * oversampleFactor,
+          include: {
+            user: true,
+            likes: true,
+            comments: true,
+            reposts: true,
+            originalPost: {
+              include: {
+                user: true,
+                poll: {
+                  include: {
+                    options: {
+                      include: {
+                        votes: true,
+                      },
                     },
                   },
                 },
               },
             },
-          },
-          poll: {
-            include: {
-              options: {
-                include: {
-                  votes: true,
+            poll: {
+              include: {
+                options: {
+                  include: {
+                    votes: true,
+                  },
                 },
               },
             },
-          },
-          hashtags: {
-            include: {
-              hashtag: true,
+            hashtags: {
+              include: {
+                hashtag: true,
+              },
             },
           },
-        },
-      }),
+        }),
 
-      // Random discovery: posts from non-followed users (any time)
-      (this.prisma as any).post.findMany({
-        where: {
-          userId: {
-            notIn: [...followingIds, userId],
+        // Trending: globally popular in last 48h (by likes/comments, then recency)
+        (this.prisma as any).post.findMany({
+          where: {
+            createdAt: {
+              gte: trendingSince,
+            },
+            ...userFilter,
           },
-          ...userFilter,
-        },
-        orderBy: { createdAt: 'desc' },
-        skip: baseSkip,
-        take: randomTarget * oversampleFactor,
-        include: {
-          user: true,
-          likes: true,
-          comments: true,
-          reposts: true,
-          originalPost: {
-            include: {
-              user: true,
-              poll: {
-                include: {
-                  options: {
-                    include: {
-                      votes: true,
+          orderBy: [
+            { likes: { _count: 'desc' } } as any,
+            { comments: { _count: 'desc' } } as any,
+            { createdAt: 'desc' },
+          ],
+          skip: baseSkip,
+          take: trendingTarget * oversampleFactor,
+          include: {
+            user: true,
+            likes: true,
+            comments: true,
+            reposts: true,
+            originalPost: {
+              include: {
+                user: true,
+                poll: {
+                  include: {
+                    options: {
+                      include: {
+                        votes: true,
+                      },
                     },
                   },
                 },
               },
             },
-          },
-          poll: {
-            include: {
-              options: {
-                include: {
-                  votes: true,
+            poll: {
+              include: {
+                options: {
+                  include: {
+                    votes: true,
+                  },
                 },
               },
             },
-          },
-          hashtags: {
-            include: {
-              hashtag: true,
+            hashtags: {
+              include: {
+                hashtag: true,
+              },
             },
           },
-        },
-      }),
-    ]);
+        }),
+
+        // Random discovery: posts from non-followed users (any time)
+        (this.prisma as any).post.findMany({
+          where: {
+            userId: {
+              notIn: [...followingIds, userId],
+            },
+            ...userFilter,
+          },
+          orderBy: { createdAt: 'desc' },
+          skip: baseSkip,
+          take: randomTarget * oversampleFactor,
+          include: {
+            user: true,
+            likes: true,
+            comments: true,
+            reposts: true,
+            originalPost: {
+              include: {
+                user: true,
+                poll: {
+                  include: {
+                    options: {
+                      include: {
+                        votes: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            poll: {
+              include: {
+                options: {
+                  include: {
+                    votes: true,
+                  },
+                },
+              },
+            },
+            hashtags: {
+              include: {
+                hashtag: true,
+              },
+            },
+          },
+        }),
+      ]);
 
     // Derive trending hashtags from the trending pool
     const trendingHashtagCounts = new Map<string, number>();
@@ -954,7 +967,10 @@ export class PostService {
       for (const rel of post.hashtags ?? []) {
         const name = rel.hashtag?.name;
         if (!name) continue;
-        trendingHashtagCounts.set(name, (trendingHashtagCounts.get(name) ?? 0) + 1);
+        trendingHashtagCounts.set(
+          name,
+          (trendingHashtagCounts.get(name) ?? 0) + 1,
+        );
       }
     }
     const trendingHashtags = new Set(
@@ -990,12 +1006,18 @@ export class PostService {
       return picked;
     };
 
-    const followingPicked = pickFromBucket(followingPosts as any[], followingTarget);
+    const followingPicked = pickFromBucket(
+      followingPosts as any[],
+      followingTarget,
+    );
     const recommendedPicked = pickFromBucket(
       recommendedPosts as any[],
       recommendedTarget,
     );
-    const trendingPicked = pickFromBucket(trendingPosts as any[], trendingTarget);
+    const trendingPicked = pickFromBucket(
+      trendingPosts as any[],
+      trendingTarget,
+    );
     const randomPicked = pickFromBucket(randomPosts as any[], randomTarget);
 
     // If some buckets are under-filled, try to top up from others
@@ -1068,7 +1090,9 @@ export class PostService {
     // Time decay: newer posts get a boost, fading after ~48h
     const freshnessWindowHours = 48;
     const freshness =
-      ageHours >= freshnessWindowHours ? 0 : (freshnessWindowHours - ageHours) / freshnessWindowHours;
+      ageHours >= freshnessWindowHours
+        ? 0
+        : (freshnessWindowHours - ageHours) / freshnessWindowHours;
 
     const engagementScore =
       likesCount * 3 + commentsCount * 5 + repostsCount * 4;
@@ -1085,8 +1109,9 @@ export class PostService {
 
   private formatPoll(poll: any, currentUserId?: string) {
     if (!poll) return null;
-    const isActive =
-      poll.expiresAt ? new Date(poll.expiresAt) > new Date() : false;
+    const isActive = poll.expiresAt
+      ? new Date(poll.expiresAt) > new Date()
+      : false;
     const totalVotes =
       poll.options?.reduce(
         (sum: number, opt: any) => sum + (opt.votes?.length ?? 0),
@@ -1120,7 +1145,9 @@ export class PostService {
         post.reposts?.some((r: any) => r.userId === currentUserId));
 
     const reposterId = post.originalPost ? post.user?.id : undefined;
-    const reposterUsername = post.originalPost ? post.user?.username : undefined;
+    const reposterUsername = post.originalPost
+      ? post.user?.username
+      : undefined;
 
     return {
       id: post.id,
@@ -1154,7 +1181,9 @@ export class PostService {
       originalPostGifUrl: post.originalPost?.gifUrl,
       originalPostPoll: this.formatPoll(post.originalPost?.poll, currentUserId),
       hashtags:
-        post.hashtags?.map((relation: any) => relation.hashtag?.name).filter(Boolean) ?? [],
+        post.hashtags
+          ?.map((relation: any) => relation.hashtag?.name)
+          .filter(Boolean) ?? [],
       poll: this.formatPoll(post.poll, currentUserId),
     };
   }

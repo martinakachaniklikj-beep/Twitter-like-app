@@ -31,11 +31,11 @@ export const TabButton = styled.button<{ $active: boolean }>`
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  color: ${({ $active }) =>
-    $active ? 'rgb(var(--background))' : 'rgb(var(--muted-foreground))'};
-  background: ${({ $active }) =>
-    $active ? 'rgb(var(--foreground))' : 'transparent'};
-  transition: background 0.15s ease, color 0.15s ease;
+  color: ${({ $active }) => ($active ? 'rgb(var(--background))' : 'rgb(var(--muted-foreground))')};
+  background: ${({ $active }) => ($active ? 'rgb(var(--foreground))' : 'transparent')};
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 `;
 
 export const Card = styled.div`
@@ -147,24 +147,23 @@ export const ThemeOptionsGrid = styled.div`
 export const ThemeOptionCard = styled.button<{ $active: boolean }>`
   border-radius: 0.75rem;
   padding: 0.9rem 0.85rem;
-  border: 1px solid
-    ${({ $active }) =>
-      $active ? 'rgb(var(--primary))' : 'rgb(var(--border))'};
-  background: ${({ $active }) =>
-    $active ? 'rgba(var(--primary), 0.06)' : 'rgb(var(--card))'};
+  border: 1px solid ${({ $active }) => ($active ? 'rgb(var(--primary))' : 'rgb(var(--border))')};
+  background: ${({ $active }) => ($active ? 'rgba(var(--primary), 0.06)' : 'rgb(var(--card))')};
   cursor: pointer;
   text-align: left;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  transition: border-color 0.18s ease, background-color 0.18s ease,
-    transform 0.12s ease, box-shadow 0.12s ease;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
 
   &:hover {
     transform: translateY(-1px);
     box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
-    background: ${({ $active }) =>
-      $active ? 'rgba(var(--primary), 0.08)' : 'rgb(var(--card))'};
+    background: ${({ $active }) => ($active ? 'rgba(var(--primary), 0.08)' : 'rgb(var(--card))')};
   }
 `;
 
@@ -198,4 +197,3 @@ export const ThemeSwatch = styled.span<{ $tone: 'primary' | 'accent' | 'backgrou
         ? 'rgb(var(--accent))'
         : 'rgb(var(--background))'};
 `;
-

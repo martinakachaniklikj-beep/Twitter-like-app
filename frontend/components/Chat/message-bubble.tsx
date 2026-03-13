@@ -1,7 +1,7 @@
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { MessageBubbleRow, MessageBubbleBubble, MessageBubbleAvatarWrap } from "./chat.styles";
-import type { MessageBubbleProps } from "./types";
-import { formatMessageTime } from "./utilities/utility";
+import { Avatar, AvatarImage } from '@/components/ui/avatar';
+import { MessageBubbleRow, MessageBubbleBubble, MessageBubbleAvatarWrap } from './chat.styles';
+import type { MessageBubbleProps } from './types';
+import { formatMessageTime } from './utilities/utility';
 import {
   MessageText,
   AttachmentsWrap,
@@ -19,7 +19,7 @@ import {
   MetaTime,
   MetaStatus,
   MetaSending,
-} from "./message-bubble.styled";
+} from './message-bubble.styled';
 
 export function MessageBubble({
   message,
@@ -36,7 +36,7 @@ export function MessageBubble({
     <MessageBubbleRow $isOwn={isOwn}>
       {!isOwn && (
         <MessageBubbleAvatarWrap>
-          <Avatar style={{ width: "100%", height: "100%" }}>
+          <Avatar style={{ width: '100%', height: '100%' }}>
             <AvatarImage src={avatar} alt="" />
           </Avatar>
         </MessageBubbleAvatarWrap>
@@ -46,21 +46,21 @@ export function MessageBubble({
         {attachments && attachments.length > 0 && (
           <AttachmentsWrap>
             {attachments.map((att) => {
-              if (att.type.startsWith("image/")) {
+              if (att.type.startsWith('image/')) {
                 return (
                   <ImageAttachmentWrap key={att.url}>
                     <ImageAttachment src={att.url} alt={att.name} />
                   </ImageAttachmentWrap>
                 );
               }
-              if (att.type.startsWith("video/")) {
+              if (att.type.startsWith('video/')) {
                 return (
                   <VideoAttachmentWrap key={att.url}>
                     <VideoAttachment controls src={att.url} />
                   </VideoAttachmentWrap>
                 );
               }
-              if (att.type.startsWith("audio/")) {
+              if (att.type.startsWith('audio/')) {
                 return (
                   <AudioAttachmentWrap key={att.url}>
                     <AudioAttachment controls src={att.url} />
@@ -70,13 +70,13 @@ export function MessageBubble({
               return (
                 <FileAttachmentWrap key={att.url}>
                   <FilePlaceholder>
-                    {att.type === "application/pdf" ? "PDF" : "FILE"}
+                    {att.type === 'application/pdf' ? 'PDF' : 'FILE'}
                   </FilePlaceholder>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <FileLink href={att.url} target="_blank" rel="noopener noreferrer">
                       {att.name}
                     </FileLink>
-                    {typeof att.size === "number" && att.size > 0 && (
+                    {typeof att.size === 'number' && att.size > 0 && (
                       <FileSize>{(att.size / (1024 * 1024)).toFixed(1)} MB</FileSize>
                     )}
                   </div>
@@ -88,13 +88,13 @@ export function MessageBubble({
         {(timeLabel || status) && (
           <MetaRow>
             {timeLabel && <MetaTime>{timeLabel}</MetaTime>}
-            {status && isOwn && status !== "sending" && (
-              <MetaStatus $read={status === "read"}>
-                {status === "read" ? "Read" : "Sent"}
+            {status && isOwn && status !== 'sending' && (
+              <MetaStatus $read={status === 'read'}>
+                {status === 'read' ? 'Read' : 'Sent'}
               </MetaStatus>
             )}
-            {status === "sending" && (
-              <MetaSending>{timeLabel ? "· Sending..." : "Sending..."}</MetaSending>
+            {status === 'sending' && (
+              <MetaSending>{timeLabel ? '· Sending...' : 'Sending...'}</MetaSending>
             )}
           </MetaRow>
         )}

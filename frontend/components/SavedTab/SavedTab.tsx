@@ -101,7 +101,11 @@ export default function SavedTab({ searchQuery = '' }: SavedTabProps) {
 
     try {
       const token = await user.getIdToken();
-      const updated = await feedServices.renameSavedCollection(token, collectionToManage.id, trimmed);
+      const updated = await feedServices.renameSavedCollection(
+        token,
+        collectionToManage.id,
+        trimmed,
+      );
 
       setCollections((prev) =>
         prev.map((c) => (c.id === updated.id ? { ...c, name: updated.name } : c)),
@@ -109,9 +113,7 @@ export default function SavedTab({ searchQuery = '' }: SavedTabProps) {
 
       setSavedPosts((prev) =>
         prev.map((p) =>
-          p.collectionName === collectionToManage.name
-            ? { ...p, collectionName: updated.name }
-            : p,
+          p.collectionName === collectionToManage.name ? { ...p, collectionName: updated.name } : p,
         ),
       );
     } catch (error) {
@@ -162,17 +164,15 @@ export default function SavedTab({ searchQuery = '' }: SavedTabProps) {
         ? savedPosts.filter((p) => !p.collectionName)
         : savedPosts.filter((p) => p.collectionName === activeCollectionFilter);
 
-  const searchFilteredPosts =
-    !normalizedQuery.length
-      ? filteredPosts
-      : filteredPosts.filter((p) => {
-          const content = (p.isRepost ? p.originalPostContent : p.content) || '';
-          const author =
-            (p.authorDisplayName || p.authorUsername || '').toString().toLowerCase();
-          const collectionName = (p.collectionName || '').toString().toLowerCase();
-          const haystack = `${content} ${author} ${collectionName}`.toLowerCase();
-          return haystack.includes(normalizedQuery);
-        });
+  const searchFilteredPosts = !normalizedQuery.length
+    ? filteredPosts
+    : filteredPosts.filter((p) => {
+        const content = (p.isRepost ? p.originalPostContent : p.content) || '';
+        const author = (p.authorDisplayName || p.authorUsername || '').toString().toLowerCase();
+        const collectionName = (p.collectionName || '').toString().toLowerCase();
+        const haystack = `${content} ${author} ${collectionName}`.toLowerCase();
+        return haystack.includes(normalizedQuery);
+      });
 
   const hasPosts = searchFilteredPosts.length > 0;
 
@@ -650,4 +650,3 @@ export default function SavedTab({ searchQuery = '' }: SavedTabProps) {
     </Container>
   );
 }
-

@@ -12,7 +12,6 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-
 export const HomeLabels = {
   appTitle: 'Twitter',
   logoutButton: 'Logout',

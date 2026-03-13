@@ -25,14 +25,26 @@ export interface MatchItem {
   stats?: MatchStats | null;
 }
 
-function normalizeFromSportdata(payload: any): MatchItem[] | null {
-  const raw = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : null;
+interface SportdataRawMatch {
+  match_id?: number;
+  match_start?: string;
+  status?: string;
+  league_id?: number;
+  season_id?: number;
+  home_team?: Record<string, unknown>;
+  away_team?: Record<string, unknown>;
+  stats?: { home_score?: number; away_score?: number; ht_score?: string; ft_score?: string };
+}
+
+function normalizeFromSportdata(payload: unknown): MatchItem[] | null {
+  const obj = payload as { data?: unknown[] };
+  const raw = Array.isArray(obj?.data) ? obj.data : Array.isArray(payload) ? payload : null;
   if (!raw) return null;
 
-  return raw
-    .map((m: any, idx: number): MatchItem | null => {
-      const home = m.home_team || {};
-      const away = m.away_team || {};
+  return (raw as SportdataRawMatch[])
+    .map((m, idx): MatchItem | null => {
+      const home = (m.home_team || {}) as Record<string, unknown>;
+      const away = (m.away_team || {}) as Record<string, unknown>;
 
       const match_id = typeof m.match_id === 'number' ? m.match_id : idx;
       const match_start =
@@ -48,13 +60,13 @@ function normalizeFromSportdata(payload: any): MatchItem[] | null {
           team_id: typeof home.team_id === 'number' ? home.team_id : undefined,
           name: String(home.name ?? 'Home'),
           short_code: typeof home.short_code === 'string' ? home.short_code : undefined,
-          logo: home.logo ?? null,
+          logo: home.logo != null && typeof home.logo === 'string' ? home.logo : null,
         },
         away_team: {
           team_id: typeof away.team_id === 'number' ? away.team_id : undefined,
           name: String(away.name ?? 'Away'),
           short_code: typeof away.short_code === 'string' ? away.short_code : undefined,
-          logo: away.logo ?? null,
+          logo: away.logo != null && typeof away.logo === 'string' ? away.logo : null,
         },
         stats: {
           home_score: m.stats?.home_score ?? null,
@@ -64,21 +76,36 @@ function normalizeFromSportdata(payload: any): MatchItem[] | null {
         },
       };
     })
-    .filter(Boolean);
+    .filter((x): x is MatchItem => x !== null);
 }
 
-function normalizeFromApiFootball(payload: any): MatchItem[] | null {
-  const raw = Array.isArray(payload?.response) ? payload.response : null;
+interface ApiFootballRawMatch {
+  fixture?: { id?: number; date?: string; status?: { short?: string; long?: string } };
+  match_id?: number;
+  match_start?: string;
+  status?: string;
+  league?: { id?: number; season?: number };
+  teams?: { home?: Record<string, unknown>; away?: Record<string, unknown> };
+  goals?: { home?: number; away?: number };
+  score?: {
+    fulltime?: { home?: number; away?: number };
+    halftime?: { home?: number; away?: number };
+  };
+}
+
+function normalizeFromApiFootball(payload: unknown): MatchItem[] | null {
+  const obj = payload as { response?: unknown[] };
+  const raw = Array.isArray(obj?.response) ? obj.response : null;
   if (!raw) return null;
 
-  return raw
-    .map((m: any, idx: number): MatchItem | null => {
+  return (raw as ApiFootballRawMatch[])
+    .map((m, idx): MatchItem | null => {
       const fixture = m.fixture || {};
       const teams = m.teams || {};
       const goals = m.goals || {};
 
-      const homeTeam = teams.home || {};
-      const awayTeam = teams.away || {};
+      const homeTeam = (teams.home || {}) as Record<string, unknown>;
+      const awayTeam = (teams.away || {}) as Record<string, unknown>;
 
       const match_id =
         typeof fixture.id === 'number'
@@ -95,9 +122,7 @@ function normalizeFromApiFootball(payload: any): MatchItem[] | null {
             : new Date().toISOString();
 
       const status =
-        (fixture.status && (fixture.status.short || fixture.status.long)) ??
-        m.status ??
-        '';
+        (fixture.status && (fixture.status.short || fixture.status.long)) ?? m.status ?? '';
 
       return {
         match_id,
@@ -109,23 +134,23 @@ function normalizeFromApiFootball(payload: any): MatchItem[] | null {
           team_id: typeof homeTeam.id === 'number' ? homeTeam.id : undefined,
           name: String(homeTeam.name ?? 'Home'),
           short_code: typeof homeTeam.code === 'string' ? homeTeam.code : undefined,
-          logo: homeTeam.logo ?? null,
+          logo: homeTeam.logo != null && typeof homeTeam.logo === 'string' ? homeTeam.logo : null,
         },
         away_team: {
           team_id: typeof awayTeam.id === 'number' ? awayTeam.id : undefined,
           name: String(awayTeam.name ?? 'Away'),
           short_code: typeof awayTeam.code === 'string' ? awayTeam.code : undefined,
-          logo: awayTeam.logo ?? null,
+          logo: awayTeam.logo != null && typeof awayTeam.logo === 'string' ? awayTeam.logo : null,
         },
         stats: {
           home_score:
             typeof goals.home === 'number'
               ? goals.home
-              : m.score?.fulltime?.home ?? m.score?.halftime?.home ?? null,
+              : (m.score?.fulltime?.home ?? m.score?.halftime?.home ?? null),
           away_score:
             typeof goals.away === 'number'
               ? goals.away
-              : m.score?.fulltime?.away ?? m.score?.halftime?.away ?? null,
+              : (m.score?.fulltime?.away ?? m.score?.halftime?.away ?? null),
           ht_score:
             typeof m.score?.halftime?.home === 'number' &&
             typeof m.score?.halftime?.away === 'number'
@@ -139,10 +164,10 @@ function normalizeFromApiFootball(payload: any): MatchItem[] | null {
         },
       };
     })
-    .filter(Boolean);
+    .filter((x): x is MatchItem => x !== null);
 }
 
-function normalizeMatches(payload: any): MatchItem[] {
+function normalizeMatches(payload: unknown): MatchItem[] {
   const fromSportdata = normalizeFromSportdata(payload);
   if (fromSportdata && fromSportdata.length > 0) return fromSportdata;
 
@@ -179,5 +204,3 @@ export const matchServices = {
     }
   },
 };
-
-

@@ -1,5 +1,5 @@
-import { styled } from "styled-components";
-import { InspirationKind } from "./types/types";
+import { styled } from 'styled-components';
+import { InspirationKind } from './types/types';
 
 const Card = styled.div`
   margin-top: 1rem;
@@ -49,9 +49,7 @@ const CarouselDot = styled.button<{ $active: boolean }>`
   border-radius: 999px;
   border: none;
   background: ${({ $active }) =>
-    $active
-      ? 'rgb(var(--primary))'
-      : 'rgba(var(--muted-foreground),0.45)'};
+    $active ? 'rgb(var(--primary))' : 'rgba(var(--muted-foreground),0.45)'};
   opacity: ${({ $active }) => ($active ? 1 : 0.6)};
   transition: all 160ms ease;
   cursor: pointer;
@@ -73,7 +71,6 @@ const Slides = styled.div<{ $index: number }>`
   transition: transform 260ms ease;
 `;
 
-
 const Slide = styled.div`
   flex: 0 0 100%;
   padding: 0.85rem;
@@ -81,7 +78,6 @@ const Slide = styled.div`
 
   min-width: 0;
 `;
-
 
 const SlideText = styled.p`
   font-size: 0.86rem;
@@ -93,8 +89,6 @@ const SlideText = styled.p`
   word-break: break-word;
   overflow-wrap: anywhere;
 `;
-
-
 
 const PremiumButton = styled.button`
   margin-top: 0.7rem;
@@ -109,4 +103,17 @@ const PremiumButton = styled.button`
   opacity: 0.85;
 `;
 
-export { Card, Header, TitleBlock, Title, Subtitle, DotsWrapper, CarouselDot, Carousel, Slides, Slide, SlideText, PremiumButton };
+export {
+  Card,
+  Header,
+  TitleBlock,
+  Title,
+  Subtitle,
+  DotsWrapper,
+  CarouselDot,
+  Carousel,
+  Slides,
+  Slide,
+  SlideText,
+  PremiumButton,
+};

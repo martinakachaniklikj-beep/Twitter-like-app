@@ -2,11 +2,7 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import {
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-  updatePassword,
-} from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme, type Theme } from '@/contexts/ThemeContext';
@@ -58,9 +54,7 @@ export function SettingsTab() {
   const queryClient = useQueryClient();
   const { theme, setTheme, toggleTheme } = useTheme();
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'themes'>(
-    'profile',
-  );
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'themes'>('profile');
 
   const [birthDateMessage, setBirthDateMessage] = useState<string | null>(null);
   const [birthDateError, setBirthDateError] = useState<string | null>(null);
@@ -107,9 +101,7 @@ export function SettingsTab() {
     formState: { isSubmitting: isSubmittingBirthDate },
   } = useForm<BirthDateFormValues>({
     defaultValues: {
-      birthDate: profile?.birthDate
-        ? new Date(profile.birthDate).toISOString().slice(0, 10)
-        : '',
+      birthDate: profile?.birthDate ? new Date(profile.birthDate).toISOString().slice(0, 10) : '',
     },
   });
 
@@ -227,10 +219,7 @@ export function SettingsTab() {
         throw new Error('Not authenticated');
       }
 
-      const credential = EmailAuthProvider.credential(
-        currentUser.email,
-        values.currentPassword,
-      );
+      const credential = EmailAuthProvider.credential(currentUser.email, values.currentPassword);
 
       await reauthenticateWithCredential(currentUser, credential);
       await updatePassword(currentUser, values.newPassword);
@@ -241,7 +230,7 @@ export function SettingsTab() {
       const message =
         error?.code === 'auth/wrong-password'
           ? 'Current password is incorrect.'
-          : error?.message ?? 'Failed to update password.';
+          : (error?.message ?? 'Failed to update password.');
       setPasswordError(message);
     }
   };
@@ -285,89 +274,69 @@ export function SettingsTab() {
           <Title>Profile details</Title>
 
           <Form onSubmit={handleSubmitProfile(onSubmitProfile)}>
-          <InputGroup>
-            <Label htmlFor="displayName">Display name</Label>
-            <Input
-              id="displayName"
-              type="text"
-              {...registerProfile('displayName')}
-            />
-          </InputGroup>
+            <InputGroup>
+              <Label htmlFor="displayName">Display name</Label>
+              <Input id="displayName" type="text" {...registerProfile('displayName')} />
+            </InputGroup>
 
-          <InputGroup>
-            <Label htmlFor="bio">Bio</Label>
-            <Input
-              id="bio"
-              type="text"
-              {...registerProfile('bio')}
-            />
-          </InputGroup>
+            <InputGroup>
+              <Label htmlFor="bio">Bio</Label>
+              <Input id="bio" type="text" {...registerProfile('bio')} />
+            </InputGroup>
 
-          <ButtonRow>
-            <PrimaryButton type="submit" disabled={isSubmittingProfile}>
-              Save
-            </PrimaryButton>
-            <SecondaryButton
-              type="button"
-              onClick={() => {
-                resetProfile({
-                  displayName: profile?.displayName ?? '',
-                  bio: profile?.bio ?? '',
-                });
-                setProfileMessage(null);
-                setProfileError(null);
-              }}
-            >
-              Reset
-            </SecondaryButton>
-          </ButtonRow>
+            <ButtonRow>
+              <PrimaryButton type="submit" disabled={isSubmittingProfile}>
+                Save
+              </PrimaryButton>
+              <SecondaryButton
+                type="button"
+                onClick={() => {
+                  resetProfile({
+                    displayName: profile?.displayName ?? '',
+                    bio: profile?.bio ?? '',
+                  });
+                  setProfileMessage(null);
+                  setProfileError(null);
+                }}
+              >
+                Reset
+              </SecondaryButton>
+            </ButtonRow>
 
-          {profileMessage && (
-            <Message $variant="success">{profileMessage}</Message>
-          )}
-          {profileError && (
-            <Message $variant="error">{profileError}</Message>
-          )}
+            {profileMessage && <Message $variant="success">{profileMessage}</Message>}
+            {profileError && <Message $variant="error">{profileError}</Message>}
           </Form>
 
           <hr className="border-border/60" />
 
           <Form onSubmit={handleSubmitBirthDate(onSubmitBirthDate)}>
-          <InputGroup>
-            <Label htmlFor="birthDate">Date of birth</Label>
-            <Input
-              id="birthDate"
-              type="date"
-              {...registerBirthDate('birthDate')}
-            />
-          </InputGroup>
+            <InputGroup>
+              <Label htmlFor="birthDate">Date of birth</Label>
+              <Input id="birthDate" type="date" {...registerBirthDate('birthDate')} />
+            </InputGroup>
 
-          <ButtonRow>
-            <PrimaryButton type="submit" disabled={isSubmittingBirthDate}>
-              Save
-            </PrimaryButton>
-            <SecondaryButton
-              type="button"
-              onClick={() => {
-                resetBirthDate({
-                  birthDate: profile?.birthDate
-                    ? new Date(profile.birthDate).toISOString().slice(0, 10)
-                    : '',
-                });
-                setBirthDateMessage(null);
-                setBirthDateError(null);
-              }}
-            >
-              Reset
-            </SecondaryButton>
-          </ButtonRow>
+            <ButtonRow>
+              <PrimaryButton type="submit" disabled={isSubmittingBirthDate}>
+                Save
+              </PrimaryButton>
+              <SecondaryButton
+                type="button"
+                onClick={() => {
+                  resetBirthDate({
+                    birthDate: profile?.birthDate
+                      ? new Date(profile.birthDate).toISOString().slice(0, 10)
+                      : '',
+                  });
+                  setBirthDateMessage(null);
+                  setBirthDateError(null);
+                }}
+              >
+                Reset
+              </SecondaryButton>
+            </ButtonRow>
 
-          {birthDateMessage && (
-            <Message $variant="success">{birthDateMessage}</Message>
-          )}
-          {birthDateError && (
-            <Message $variant="error">{birthDateError}</Message>
-          )}
+            {birthDateMessage && <Message $variant="success">{birthDateMessage}</Message>}
+            {birthDateError && <Message $variant="error">{birthDateError}</Message>}
           </Form>
         </Card>
       )}
@@ -377,79 +346,70 @@ export function SettingsTab() {
           <Title>Security</Title>
 
           <Form onSubmit={handleSubmitPassword(onSubmitPassword)}>
-          <InputGroup>
-            <Label htmlFor="currentPassword">Current password</Label>
-            <Input
-              id="currentPassword"
-              type="password"
-              autoComplete="current-password"
-              {...registerPassword('currentPassword', { required: true })}
-            />
-          </InputGroup>
+            <InputGroup>
+              <Label htmlFor="currentPassword">Current password</Label>
+              <Input
+                id="currentPassword"
+                type="password"
+                autoComplete="current-password"
+                {...registerPassword('currentPassword', { required: true })}
+              />
+            </InputGroup>
 
-          <InputGroup>
-            <Label htmlFor="newPassword">New password</Label>
-            <Input
-              id="newPassword"
-              type="password"
-              autoComplete="new-password"
-              {...registerPassword('newPassword', { required: true })}
-            />
-          </InputGroup>
+            <InputGroup>
+              <Label htmlFor="newPassword">New password</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                autoComplete="new-password"
+                {...registerPassword('newPassword', { required: true })}
+              />
+            </InputGroup>
 
-          <InputGroup>
-            <Label htmlFor="confirmNewPassword">Confirm new password</Label>
-            <Input
-              id="confirmNewPassword"
-              type="password"
-              autoComplete="new-password"
-              {...registerPassword('confirmNewPassword', { required: true })}
-            />
-          </InputGroup>
+            <InputGroup>
+              <Label htmlFor="confirmNewPassword">Confirm new password</Label>
+              <Input
+                id="confirmNewPassword"
+                type="password"
+                autoComplete="new-password"
+                {...registerPassword('confirmNewPassword', { required: true })}
+              />
+            </InputGroup>
 
-          <ButtonRow>
-            <PrimaryButton type="submit" disabled={isSubmittingPassword}>
-              Change password
-            </PrimaryButton>
-            <SecondaryButton
-              type="button"
-              onClick={() => {
-                resetPassword();
-                setPasswordMessage(null);
-                setPasswordError(null);
-              }}
-            >
-              Clear
-            </SecondaryButton>
-          </ButtonRow>
+            <ButtonRow>
+              <PrimaryButton type="submit" disabled={isSubmittingPassword}>
+                Change password
+              </PrimaryButton>
+              <SecondaryButton
+                type="button"
+                onClick={() => {
+                  resetPassword();
+                  setPasswordMessage(null);
+                  setPasswordError(null);
+                }}
+              >
+                Clear
+              </SecondaryButton>
+            </ButtonRow>
 
-          {passwordMessage && (
-            <Message $variant="success">{passwordMessage}</Message>
-          )}
-          {passwordError && (
-            <Message $variant="error">{passwordError}</Message>
-          )}
+            {passwordMessage && <Message $variant="success">{passwordMessage}</Message>}
+            {passwordError && <Message $variant="error">{passwordError}</Message>}
           </Form>
 
           <hr className="border-border/60" />
 
           <div>
-            <h3 className="text-sm font-semibold text-foreground">
-              Blocked users
-            </h3>
+            <h3 className="text-sm font-semibold text-foreground">Blocked users</h3>
             {blockedLoading && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                Loading blocked accounts…
-              </p>
+              <p className="mt-1 text-sm text-muted-foreground">Loading blocked accounts…</p>
             )}
             {blockedError && !blockedLoading && (
-              <p className="mt-1 text-sm text-red-500">
-                Failed to load blocked accounts.
-              </p>
+              <p className="mt-1 text-sm text-red-500">Failed to load blocked accounts.</p>
             )}
             {!blockedLoading && !blockedError && blockedUsers.length === 0 && (
               <p className="mt-1 text-sm text-muted-foreground">
-                You haven&apos;t blocked any accounts. When you block someone, they&apos;ll appear here and you can choose to unblock them.
+                You haven&apos;t blocked any accounts. When you block someone, they&apos;ll appear
+                here and you can choose to unblock them.
               </p>
             )}
             {!blockedLoading && !blockedError && blockedUsers.length > 0 && (
@@ -463,9 +423,7 @@ export function SettingsTab() {
                       <span className="text-sm font-medium text-foreground">
                         {b.displayName || b.username}
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        @{b.username}
-                      </span>
+                      <span className="text-xs text-muted-foreground">@{b.username}</span>
                     </div>
                     <button
                       type="button"
@@ -488,8 +446,7 @@ export function SettingsTab() {
           <Title>Themes</Title>
 
           <p className="text-sm text-muted-foreground">
-            Switch between light and dark themes, and pick a color style that
-            feels right for you.
+            Switch between light and dark themes, and pick a color style that feels right for you.
           </p>
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -533,9 +490,7 @@ export function SettingsTab() {
                 onClick={() => setTheme(preset.id)}
               >
                 <ThemeOptionName>{preset.name}</ThemeOptionName>
-                <ThemeOptionDescription>
-                  {preset.description}
-                </ThemeOptionDescription>
+                <ThemeOptionDescription>{preset.description}</ThemeOptionDescription>
                 <ThemeSwatchRow>
                   <ThemeSwatch $tone="background" />
                   <ThemeSwatch $tone="primary" />
@@ -549,4 +504,3 @@ export function SettingsTab() {
     </Container>
   );
 }
-

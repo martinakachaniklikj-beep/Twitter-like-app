@@ -59,9 +59,7 @@ export function SuggestedFollowersCard() {
     // Kitty Bot is a product bot, not a real user,
     // so we never want to show it in "Suggested to follow".
     const base = rawSuggestions.filter(
-      (u) =>
-        u.id !== 'kitty-bot' &&
-        u.username.toLowerCase() !== 'kittybot',
+      (u) => u.id !== 'kitty-bot' && u.username.toLowerCase() !== 'kittybot',
     );
 
     if (!base.length) return [];
@@ -72,9 +70,7 @@ export function SuggestedFollowersCard() {
     const scored = base
       .filter((u) => !followingIds.has(u.id) && u.id !== currentUserId)
       .map((u) => {
-        const score =
-          (u.followersCount ?? 0) * 2 +
-          (u.location ? 5 : 0);
+        const score = (u.followersCount ?? 0) * 2 + (u.location ? 5 : 0);
         return { user: u, score };
       })
       .sort((a, b) => b.score - a.score);
@@ -169,8 +165,7 @@ export function SuggestedFollowersCard() {
             color: 'rgb(var(--muted-foreground))',
           }}
         >
-          No suggestions yet. Interact with more posts and people to get
-          better recommendations.
+          No suggestions yet. Interact with more posts and people to get better recommendations.
         </p>
       )}
 
@@ -322,4 +317,3 @@ export function SuggestedFollowersCard() {
     </div>
   );
 }
-

@@ -41,7 +41,8 @@ export class CommentService {
           },
         });
 
-        const actorName = commenter?.displayName || commenter?.username || 'Someone';
+        const actorName =
+          commenter?.displayName || commenter?.username || 'Someone';
 
         const notificationMessage = `${actorName} commented on your post.`;
 
@@ -53,14 +54,17 @@ export class CommentService {
           },
         });
 
-        this.notifications.broadcastInAppNotification(notification.userId, notification);
-
-        const targetUser: { fcmToken: string | null } | null = await (this.prisma as any).user.findUnique(
-          {
-            where: { id: post.userId },
-            select: { fcmToken: true },
-          },
+        this.notifications.broadcastInAppNotification(
+          notification.userId,
+          notification,
         );
+
+        const targetUser: { fcmToken: string | null } | null = await (
+          this.prisma as any
+        ).user.findUnique({
+          where: { id: post.userId },
+          select: { fcmToken: true },
+        });
 
         await this.notifications.sendPushNotification(
           targetUser?.fcmToken,
@@ -108,8 +112,10 @@ export class CommentService {
         replyText.trim() ||
         'Meow! My whiskers got a bit tangled there. Try asking me again in a slightly different way.';
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to generate Kitty Bot reply for comment mention', error);
+      console.error(
+        'Failed to generate Kitty Bot reply for comment mention',
+        error,
+      );
       replyText =
         'Meow! I tried to reply but something went wrong. Please try tagging me again in a moment.';
     }
@@ -123,4 +129,3 @@ export class CommentService {
     });
   }
 }
-

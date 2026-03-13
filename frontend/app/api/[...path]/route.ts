@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   const { path: pathArray } = await params;
   const path = pathArray.join('/');
@@ -24,20 +24,19 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   const { path: pathArray } = await params;
   const path = pathArray.join('/');
-  
+
   let body = null;
   try {
     const text = await request.text();
     if (text) {
       body = JSON.parse(text);
     }
-  } catch (e) {
-  }
-  
+  } catch (e) {}
+
   const authHeader = request.headers.get('authorization');
 
   const headers: HeadersInit = { 'Content-Type': 'application/json' };
@@ -59,7 +58,7 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   const { path: pathArray } = await params;
   const path = pathArray.join('/');
@@ -83,7 +82,7 @@ export async function DELETE(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   const { path: pathArray } = await params;
   const path = pathArray.join('/');

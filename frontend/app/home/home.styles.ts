@@ -100,7 +100,9 @@ export const SidebarCard = styled.div`
   top: 4.25rem;
   width: 100%;
   min-width: 56px;
-  transition: min-width 0.2s ease, padding 0.2s ease;
+  transition:
+    min-width 0.2s ease,
+    padding 0.2s ease;
 
   /* Icons-only (minimized) when viewport below 1280px */
   @media (max-width: 1279px) {
@@ -135,53 +137,55 @@ export const TabButton = styled.button<{ $active: boolean }>`
   width: 100%;
 
   /* Default light theme: neutral gray backgrounds so the active tab stands out without strong color */
-  background: ${props =>
+  background: ${(props) =>
     props.$active ? 'rgb(209, 213, 219)' : 'transparent'}; /* gray-300 active */
   color: rgb(var(--foreground));
 
   &:hover {
-    background: ${props =>
+    background: ${(props) =>
       props.$active ? 'rgb(156, 163, 175)' : 'rgb(243, 244, 246)'}; /* gray-500 / gray-100 */
   }
 
   /* Sakura theme: use soft pink-tinted backgrounds on hover/active */
   .theme-sakura & {
-    background: ${props =>
+    background: ${(props) =>
       props.$active ? 'rgb(236, 72, 153)' : 'transparent'}; /* pink-500 when active */
     color: rgb(var(--foreground));
 
     &:hover {
-      background: ${props =>
-        props.$active
-          ? 'rgb(236, 72, 153)' /* keep active tab solid pink on hover */
-          : 'rgba(236, 72, 153, 0.3)' /* darker pink wash on hover for inactive */};
+      background: ${
+        (props) =>
+          props.$active
+            ? 'rgb(236, 72, 153)' /* keep active tab solid pink on hover */
+            : 'rgba(236, 72, 153, 0.3)' /* darker pink wash on hover for inactive */
+      };
     }
   }
 
   /* Matcha theme: use soft green-tinted backgrounds on hover/active */
   .theme-matcha & {
-    background: ${props =>
+    background: ${(props) =>
       props.$active ? 'rgb(22, 163, 74)' : 'transparent'}; /* green-600 when active */
     color: rgb(var(--foreground));
 
     &:hover {
-      background: ${props =>
-        props.$active
-          ? 'rgb(22, 163, 74)' /* keep active tab solid green on hover */
-          : 'rgba(22, 163, 74, 0.28)' /* deeper green wash on hover for inactive */};
+      background: ${
+        (props) =>
+          props.$active
+            ? 'rgb(22, 163, 74)' /* keep active tab solid green on hover */
+            : 'rgba(22, 163, 74, 0.28)' /* deeper green wash on hover for inactive */
+      };
     }
   }
 
   /* Dark theme: revert to colored primary/accent behavior for clarity */
   .dark & {
-    background: ${props =>
-      props.$active ? 'rgb(var(--primary))' : 'transparent'};
-    color: ${props =>
+    background: ${(props) => (props.$active ? 'rgb(var(--primary))' : 'transparent')};
+    color: ${(props) =>
       props.$active ? 'rgb(var(--primary-foreground))' : 'rgb(var(--foreground))'};
 
     &:hover {
-      background: ${props =>
-        props.$active ? 'rgb(var(--primary))' : 'rgb(var(--accent))'};
+      background: ${(props) => (props.$active ? 'rgb(var(--primary))' : 'rgb(var(--accent))')};
     }
   }
 
@@ -197,7 +201,9 @@ export const TabButton = styled.button<{ $active: boolean }>`
   span {
     white-space: nowrap;
     overflow: hidden;
-    transition: opacity 0.2s ease, max-width 0.2s ease;
+    transition:
+      opacity 0.2s ease,
+      max-width 0.2s ease;
   }
 
   @media (max-width: 1279px) {
@@ -211,7 +217,9 @@ export const UserInfo = styled.div`
   margin-top: 0.75rem;
   padding-top: 0.75rem;
   border-top: 1px solid rgb(var(--border));
-  transition: margin 0.2s ease, padding 0.2s ease;
+  transition:
+    margin 0.2s ease,
+    padding 0.2s ease;
   position: relative;
 
   @media (max-width: 1279px) {
@@ -306,9 +314,9 @@ export const MainScroll = styled.div`
 `;
 
 export const TabContentShell = styled.div<{ $fullWidth?: boolean; $compactLeft?: boolean }>`
-  max-width: ${props => (props.$fullWidth ? '100%' : '760px')};
-  margin: ${props => (props.$compactLeft ? '10px 20px' : '10px auto')};
-  padding: ${props =>
+  max-width: ${(props) => (props.$fullWidth ? '100%' : '760px')};
+  margin: ${(props) => (props.$compactLeft ? '10px 20px' : '10px auto')};
+  padding: ${(props) =>
     props.$fullWidth
       ? '0 0 1.5rem'
       : props.$compactLeft
@@ -364,7 +372,10 @@ export const FloatingCatButton = styled.button`
   cursor: pointer;
   z-index: 200;
   opacity: 1;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
 
   &:hover {
     transform: translateY(-1px) scale(1.02);
@@ -409,7 +420,9 @@ export const UserMenuItem = styled.button`
   color: rgb(254, 226, 226); /* soft red text instead of white */
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.1s ease;
 
   &:hover {
     background: rgb(185, 28, 28); /* darker on hover */

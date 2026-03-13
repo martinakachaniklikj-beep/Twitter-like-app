@@ -29,13 +29,23 @@ export class SearchHistoryService {
       uniqueUserIds.length > 0
         ? await (this.prisma as any).user.findMany({
             where: { id: { in: uniqueUserIds } },
-            select: { id: true, username: true, displayName: true, avatarUrl: true },
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+              avatarUrl: true,
+            },
           })
         : [];
 
     const userMap = new Map<
       string,
-      { id: string; username: string; displayName: string | null; avatarUrl: string | null }
+      {
+        id: string;
+        username: string;
+        displayName: string | null;
+        avatarUrl: string | null;
+      }
     >(users.map((u: any) => [u.id, u]));
 
     // Return data shaped for the Explore tab: search results + history id
@@ -114,4 +124,3 @@ export class SearchHistoryService {
     return { success: true, deleted: result.count };
   }
 }
-

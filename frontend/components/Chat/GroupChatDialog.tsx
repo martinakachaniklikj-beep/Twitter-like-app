@@ -1,16 +1,22 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import SearchBar from "@/components/SearchBar/SearchBar";
-import { followServices, type FollowUser } from "@/services/followServices";
-import { chatServices, type Conversation } from "@/services/chatServices";
-import type { GroupChatDialogProps } from "./types";
+import { useEffect, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarImage } from '@/components/ui/avatar';
+import SearchBar from '@/components/SearchBar/SearchBar';
+import { followServices, type FollowUser } from '@/services/followServices';
+import { chatServices, type Conversation } from '@/services/chatServices';
+import type { GroupChatDialogProps } from './types';
 import {
   DialogBody,
   FieldGroup,
@@ -32,11 +38,11 @@ import {
   ParticipantDisplayName,
   ParticipantUsername,
   Checkbox,
-} from "./GroupChatDialog.styled";
+} from './GroupChatDialog.styled';
 
 export function GroupChatDialog({ open, onOpenChange, onCreated }: GroupChatDialogProps) {
   const { user } = useAuth();
-  const [groupName, setGroupName] = useState("");
+  const [groupName, setGroupName] = useState('');
   const [followers, setFollowers] = useState<FollowUser[]>([]);
   const [followersLoading, setFollowersLoading] = useState(false);
   const [followersError, setFollowersError] = useState<string | null>(null);
@@ -46,7 +52,7 @@ export function GroupChatDialog({ open, onOpenChange, onCreated }: GroupChatDial
 
   useEffect(() => {
     if (!open) {
-      setGroupName("");
+      setGroupName('');
       setFollowers([]);
       setFollowersError(null);
       setFollowersLoading(false);
@@ -65,7 +71,7 @@ export function GroupChatDialog({ open, onOpenChange, onCreated }: GroupChatDial
         const list = await followServices.fetchFollowers(token);
         setFollowers(list);
       } catch (err: any) {
-        setFollowersError(err?.message ?? "Failed to load followers");
+        setFollowersError(err?.message ?? 'Failed to load followers');
       } finally {
         setFollowersLoading(false);
       }
@@ -93,15 +99,15 @@ export function GroupChatDialog({ open, onOpenChange, onCreated }: GroupChatDial
 
   const createGroupMutation = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error("Not logged in");
+      if (!user) throw new Error('Not logged in');
       const token = await user.getIdToken();
       const memberUserIds = Array.from(selectedIds);
       if (memberUserIds.length === 0) {
-        throw new Error("Add at least one participant");
+        throw new Error('Add at least one participant');
       }
       const name = groupName.trim();
       if (!name) {
-        throw new Error("Group name is required");
+        throw new Error('Group name is required');
       }
       return chatServices.createGroup(token, memberUserIds, name);
     },
@@ -116,7 +122,7 @@ export function GroupChatDialog({ open, onOpenChange, onCreated }: GroupChatDial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent style={{ maxWidth: "32rem" }} showCloseButton>
+      <DialogContent style={{ maxWidth: '32rem' }} showCloseButton>
         <DialogHeader>
           <DialogTitle>Create group chat</DialogTitle>
         </DialogHeader>
@@ -164,9 +170,7 @@ export function GroupChatDialog({ open, onOpenChange, onCreated }: GroupChatDial
               <ParticipantsBoxTitle>Your followers</ParticipantsBoxTitle>
               {followersLoading && <ParticipantsBoxLoading>Loading…</ParticipantsBoxLoading>}
             </ParticipantsBoxHeader>
-            {followersError && (
-              <ParticipantsBoxError>{followersError}</ParticipantsBoxError>
-            )}
+            {followersError && <ParticipantsBoxError>{followersError}</ParticipantsBoxError>}
             {!followersLoading && allCandidates.length === 0 && (
               <ParticipantsBoxEmpty>No followers or search results yet.</ParticipantsBoxEmpty>
             )}
@@ -179,7 +183,7 @@ export function GroupChatDialog({ open, onOpenChange, onCreated }: GroupChatDial
                     <ParticipantListItem key={u.id}>
                       <ParticipantButton type="button" onClick={() => toggleSelected(u.id)}>
                         <Checkbox checked={checked} readOnly />
-                        <Avatar style={{ width: "1.75rem", height: "1.75rem" }}>
+                        <Avatar style={{ width: '1.75rem', height: '1.75rem' }}>
                           <AvatarImage
                             src={(u.avatarUrl as string | undefined) ?? undefined}
                             alt={name}
@@ -199,17 +203,13 @@ export function GroupChatDialog({ open, onOpenChange, onCreated }: GroupChatDial
 
           {createGroupMutation.isError && (
             <ErrorText>
-              {(createGroupMutation.error as Error)?.message ?? "Failed to create group"}
+              {(createGroupMutation.error as Error)?.message ?? 'Failed to create group'}
             </ErrorText>
           )}
         </DialogBody>
 
-        <DialogFooter style={{ marginTop: "1rem" }}>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
+        <DialogFooter style={{ marginTop: '1rem' }}>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button
@@ -217,11 +217,10 @@ export function GroupChatDialog({ open, onOpenChange, onCreated }: GroupChatDial
             disabled={isCreateDisabled}
             onClick={() => createGroupMutation.mutate()}
           >
-            {createGroupMutation.isPending ? "Creating…" : "Create group"}
+            {createGroupMutation.isPending ? 'Creating…' : 'Create group'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-

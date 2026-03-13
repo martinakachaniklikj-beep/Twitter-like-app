@@ -5,7 +5,11 @@ import { PrismaService } from '../prisma/prisma.service';
 export class SavedPostsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async toggleSavedPost(userId: string, postId: string, collectionName?: string | null) {
+  async toggleSavedPost(
+    userId: string,
+    postId: string,
+    collectionName?: string | null,
+  ) {
     const trimmedName = collectionName?.trim() ?? null;
 
     // If no collection name is provided at all, treat as "global" toggle:
@@ -79,9 +83,11 @@ export class SavedPostsService {
       },
     });
 
-    const existingInCollection = await (this.prisma as any).savedPost.findFirst({
-      where: { userId, postId, collectionId: collection.id },
-    });
+    const existingInCollection = await (this.prisma as any).savedPost.findFirst(
+      {
+        where: { userId, postId, collectionId: collection.id },
+      },
+    );
 
     if (existingInCollection) {
       await (this.prisma as any).savedPost
@@ -163,7 +169,11 @@ export class SavedPostsService {
     }));
   }
 
-  async renameCollection(userId: string, collectionId: string, newName: string) {
+  async renameCollection(
+    userId: string,
+    collectionId: string,
+    newName: string,
+  ) {
     const trimmed = newName.trim();
     if (!trimmed) {
       throw new NotFoundException('Collection name cannot be empty');
@@ -208,7 +218,9 @@ export class SavedPostsService {
         post.reposts?.some((r: any) => r.userId === currentUserId));
 
     const reposterId = post.originalPost ? post.user?.id : undefined;
-    const reposterUsername = post.originalPost ? post.user?.username : undefined;
+    const reposterUsername = post.originalPost
+      ? post.user?.username
+      : undefined;
 
     return {
       id: post.id,
@@ -243,4 +255,3 @@ export class SavedPostsService {
     };
   }
 }
-

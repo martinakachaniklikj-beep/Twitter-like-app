@@ -90,9 +90,7 @@ export default function ExploreTab() {
 
       {history.length > 0 && (
         <div className="mt-2">
-          <h2 className="mb-2 text-sm font-semibold text-muted-foreground">
-            Recently searched
-          </h2>
+          <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Recently searched</h2>
           <ul className="flex flex-col gap-2">
             {history.map((user) => (
               <li key={user.historyId}>
@@ -152,4 +150,3 @@ export default function ExploreTab() {
     </div>
   );
 }
-

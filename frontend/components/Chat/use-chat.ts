@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useState, useCallback, useEffect, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
-import { useChatSocket } from "@/contexts/ChatSocketContext";
-import { chatServices, type ApiMessage } from "@/services/chatServices";
-import type { Message, ChatAttachment, MessageContentPayload } from "./types";
-import { parseMessageContent } from "./utilities/utility";
-import { storage } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
+import { useChatSocket } from '@/contexts/ChatSocketContext';
+import { chatServices, type ApiMessage } from '@/services/chatServices';
+import type { Message, ChatAttachment, MessageContentPayload } from './types';
+import { parseMessageContent } from './utilities/utility';
+import { storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-export { parseMessageContent } from "./utilities/utility";
+export { parseMessageContent } from './utilities/utility';
 
 const MAX_MESSAGE_TEXT_LENGTH = 2000;
 const MAX_ATTACHMENTS_PER_MESSAGE = 5;
@@ -27,15 +27,15 @@ function apiMessageToMessage(m: ApiMessage): Message {
     senderId: m.senderId,
     conversationId: m.conversationId,
     createdAt: m.createdAt,
-    status: m.status as Message["status"],
+    status: m.status as Message['status'],
     attachments,
   };
 }
 
 async function uploadChatFile(file: File, userId: string): Promise<ChatAttachment> {
-  const safeName = file.name.replace(/[^\w.\-]/g, "_");
-  const ext = safeName.includes(".") ? safeName.split(".").pop() : undefined;
-  const path = `chat/${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}${ext ? `.${ext}` : ""}`;
+  const safeName = file.name.replace(/[^\w.\-]/g, '_');
+  const ext = safeName.includes('.') ? safeName.split('.').pop() : undefined;
+  const path = `chat/${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}${ext ? `.${ext}` : ''}`;
   const storageRef = ref(storage, path);
   const snapshot = await uploadBytes(storageRef, file, { contentType: file.type });
   const url = await getDownloadURL(snapshot.ref);
@@ -111,7 +111,7 @@ export function useChat(conversationId: string | null) {
         return [...prev, apiMessageToMessage(apiMsg)];
       });
       // Refresh conversations so the sidebar shows the latest message and timestamp
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
     });
     return unsub;
   }, [conversationId, onMessageNew, queryClient]);
@@ -135,12 +135,10 @@ export function useChat(conversationId: string | null) {
     if (!conversationId || !currentUserId) return;
     setMessages((prev) =>
       prev.map((m) =>
-        m.conversationId === conversationId &&
-        m.senderId !== currentUserId &&
-        m.status === "sent"
-          ? { ...m, status: "read" }
-          : m
-      )
+        m.conversationId === conversationId && m.senderId !== currentUserId && m.status === 'sent'
+          ? { ...m, status: 'read' }
+          : m,
+      ),
     );
   }, [conversationId, currentUserId]);
 
@@ -153,7 +151,7 @@ export function useChat(conversationId: string | null) {
 
       if (trimmed.length > MAX_MESSAGE_TEXT_LENGTH) {
         console.warn(
-          `Message is too long. Maximum length is ${MAX_MESSAGE_TEXT_LENGTH} characters.`
+          `Message is too long. Maximum length is ${MAX_MESSAGE_TEXT_LENGTH} characters.`,
         );
         return;
       }
@@ -161,16 +159,16 @@ export function useChat(conversationId: string | null) {
       const allFiles = Array.isArray(files) ? files : [];
       if (allFiles.length > MAX_ATTACHMENTS_PER_MESSAGE) {
         console.warn(
-          `Too many attachments. Maximum is ${MAX_ATTACHMENTS_PER_MESSAGE} per message.`
+          `Too many attachments. Maximum is ${MAX_ATTACHMENTS_PER_MESSAGE} per message.`,
         );
         return;
       }
 
       const validFiles = allFiles.filter((file) => {
         const isSupported =
-          file.type.startsWith("image/") ||
-          file.type.startsWith("video/") ||
-          file.type.startsWith("audio/");
+          file.type.startsWith('image/') ||
+          file.type.startsWith('video/') ||
+          file.type.startsWith('audio/');
         const isWithinSize = file.size <= MAX_ATTACHMENT_SIZE_BYTES;
         return isSupported && isWithinSize;
       });
@@ -178,9 +176,10 @@ export function useChat(conversationId: string | null) {
       const totalSize = validFiles.reduce((sum, file) => sum + file.size, 0);
       if (totalSize > MAX_TOTAL_ATTACHMENTS_SIZE_BYTES) {
         console.warn(
-          `Attachments are too large in total. Maximum is ${(MAX_TOTAL_ATTACHMENTS_SIZE_BYTES / (1024 * 1024)).toFixed(
-            0
-          )} MB per message.`
+          `Attachments are too large in total. Maximum is ${(
+            MAX_TOTAL_ATTACHMENTS_SIZE_BYTES /
+            (1024 * 1024)
+          ).toFixed(0)} MB per message.`,
         );
         return;
       }
@@ -199,7 +198,7 @@ export function useChat(conversationId: string | null) {
         senderId: currentUserId,
         conversationId,
         createdAt: new Date().toISOString(),
-        status: "sending",
+        status: 'sending',
         attachments: optimisticAttachments.length ? optimisticAttachments : undefined,
       };
       setMessages((prev) => [...prev, optimistic]);
@@ -234,28 +233,24 @@ export function useChat(conversationId: string | null) {
         if (result.message) {
           // Replace optimistic message with the authoritative server message
           setMessages((prev) =>
-            prev.map((m) =>
-              m.id === tempId ? apiMessageToMessage(result.message!) : m
-            )
+            prev.map((m) => (m.id === tempId ? apiMessageToMessage(result.message!) : m)),
           );
         } else {
           // Fallback: just mark as sent if no message payload is returned
           setMessages((prev) =>
-            prev.map((m) =>
-              m.id === tempId ? { ...m, status: "sent" as const } : m
-            )
+            prev.map((m) => (m.id === tempId ? { ...m, status: 'sent' as const } : m)),
           );
         }
       } catch (err) {
-        console.error("Failed to send chat message", err);
+        console.error('Failed to send chat message', err);
         // Remove optimistic message on hard failure
         setMessages((prev) => prev.filter((m) => m.id !== tempId));
         return;
       }
       // Ensure sidebar reflects the latest message
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
-    [currentUserId, conversationId, socketSend, queryClient]
+    [currentUserId, conversationId, socketSend, queryClient],
   );
 
   const loadMore = useCallback(async () => {
@@ -268,10 +263,7 @@ export function useChat(conversationId: string | null) {
       const token = await user.getIdToken();
       const older = await chatServices.getMessages(token, conversationId, firstId);
       if (older.length === 0) hasMoreRef.current = false;
-      setMessages((prev) => [
-        ...older.map(apiMessageToMessage),
-        ...prev,
-      ]);
+      setMessages((prev) => [...older.map(apiMessageToMessage), ...prev]);
     } finally {
       setLoadingMore(false);
     }

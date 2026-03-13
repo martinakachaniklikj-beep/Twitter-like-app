@@ -102,8 +102,7 @@ function HomePageContent() {
     refetchOnWindowFocus: true,
   });
 
-  const unreadNotificationsCount =
-    notificationsForBadge?.filter((n) => !n.readAt).length ?? 0;
+  const unreadNotificationsCount = notificationsForBadge?.filter((n) => !n.readAt).length ?? 0;
 
   const { data: conversationsForBadge } = useQuery<ConversationListItem[]>({
     queryKey: ['conversations'],
@@ -117,8 +116,7 @@ function HomePageContent() {
     enabled: !!user,
   });
 
-  const hasUnreadMessages =
-    conversationsForBadge?.some((c) => c.hasUnread) ?? false;
+  const hasUnreadMessages = conversationsForBadge?.some((c) => c.hasUnread) ?? false;
 
   useEffect(() => {
     const unsubscribe = onNotificationNew((notification) => {
@@ -226,7 +224,11 @@ function HomePageContent() {
                   }}
                 />
               )}
-              <HeaderLogoutButton type="button" onClick={handleLogout} title={HomeLabels.logoutButton}>
+              <HeaderLogoutButton
+                type="button"
+                onClick={handleLogout}
+                title={HomeLabels.logoutButton}
+              >
                 <LogOut size={18} />
                 <span>{HomeLabels.logoutButton}</span>
               </HeaderLogoutButton>

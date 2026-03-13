@@ -57,14 +57,17 @@ export class LikeService {
           },
         });
 
-        this.notifications.broadcastInAppNotification(notification.userId, notification);
-
-        const targetUser: { fcmToken: string | null } | null = await (this.prisma as any).user.findUnique(
-          {
-            where: { id: post.userId },
-            select: { fcmToken: true },
-          },
+        this.notifications.broadcastInAppNotification(
+          notification.userId,
+          notification,
         );
+
+        const targetUser: { fcmToken: string | null } | null = await (
+          this.prisma as any
+        ).user.findUnique({
+          where: { id: post.userId },
+          select: { fcmToken: true },
+        });
 
         await this.notifications.sendPushNotification(
           targetUser?.fcmToken,

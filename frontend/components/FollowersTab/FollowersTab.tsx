@@ -7,11 +7,7 @@ import { useRouter } from 'next/navigation';
 import { followServices } from '@/services/followServices';
 import { FeedTabsRow, FeedTabButton } from '@/components/FeedTab/FeedTab.styles';
 import type { FollowersList, FollowersMode, FollowersTabProps } from './types';
-import {
-  computeNotFollowingBack,
-  filterFollowersByQuery,
-  selectActiveList,
-} from './utils';
+import { computeNotFollowingBack, filterFollowersByQuery, selectActiveList } from './utils';
 
 export default function FollowersTab({ searchQuery = '' }: FollowersTabProps) {
   const { user } = useAuth();
@@ -112,7 +108,12 @@ export default function FollowersTab({ searchQuery = '' }: FollowersTabProps) {
                   <img
                     src={u.avatarUrl}
                     alt={u.username}
-                    style={{ width: '100%', height: '100%', borderRadius: '9999px', objectFit: 'cover' }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '9999px',
+                      objectFit: 'cover',
+                    }}
                   />
                 ) : (
                   <span>{(u.displayName || u.username)[0]?.toUpperCase()}</span>
@@ -136,4 +137,3 @@ export default function FollowersTab({ searchQuery = '' }: FollowersTabProps) {
     </div>
   );
 }
-

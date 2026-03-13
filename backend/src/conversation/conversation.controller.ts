@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Param, Body, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { ConversationService } from './conversation.service';
 import { FirebaseAuthGuard } from '../firebase/firebase-auth.guard';
@@ -28,8 +36,14 @@ export class ConversationController {
   }
 
   @Post('direct')
-  getOrCreateDirect(@Req() req: AuthRequest, @Body('otherUserId') otherUserId: string) {
-    return this.conversationService.getOrCreateDirect(req.user.uid, otherUserId);
+  getOrCreateDirect(
+    @Req() req: AuthRequest,
+    @Body('otherUserId') otherUserId: string,
+  ) {
+    return this.conversationService.getOrCreateDirect(
+      req.user.uid,
+      otherUserId,
+    );
   }
 
   @Post('group')
@@ -38,7 +52,11 @@ export class ConversationController {
     @Body('memberUserIds') memberUserIds: string[],
     @Body('name') name?: string,
   ) {
-    return this.conversationService.createGroup(req.user.uid, memberUserIds ?? [], name);
+    return this.conversationService.createGroup(
+      req.user.uid,
+      memberUserIds ?? [],
+      name,
+    );
   }
 
   @Post(':id/leave')
@@ -52,7 +70,11 @@ export class ConversationController {
     @Param('id') id: string,
     @Body('action') action: 'accept' | 'deny',
   ) {
-    return this.conversationService.respondToGroupInvite(id, req.user.uid, action);
+    return this.conversationService.respondToGroupInvite(
+      id,
+      req.user.uid,
+      action,
+    );
   }
 
   @Post(':id/read')

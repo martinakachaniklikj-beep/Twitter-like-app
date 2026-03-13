@@ -35,7 +35,10 @@ export class UsersController {
   }
 
   @Get('mentions')
-  getMentionSuggestions(@Req() req: AuthRequest, @Query('q') query?: string): Promise<
+  getMentionSuggestions(
+    @Req() req: AuthRequest,
+    @Query('q') query?: string,
+  ): Promise<
     {
       id: string;
       username: string;
@@ -54,7 +57,8 @@ export class UsersController {
   @Patch('profile')
   updateProfile(
     @Req() req: AuthRequest,
-    @Body() updateDto: {
+    @Body()
+    updateDto: {
       displayName?: string;
       bio?: string;
       avatarUrl?: string;

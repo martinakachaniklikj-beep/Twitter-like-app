@@ -22,7 +22,7 @@ export class MatchesService {
     } catch (error: any) {
       // Surface some context in logs to make debugging easier
       // without leaking raw error details to the client.
-      // eslint-disable-next-line no-console
+
       console.error(
         'Error fetching live football fixtures',
         error?.response?.status,
@@ -49,7 +49,6 @@ export class MatchesService {
 
       return response.data;
     } catch (error: any) {
-      // eslint-disable-next-line no-console
       console.error(
         'Error fetching football fixture by id',
         id,
@@ -57,10 +56,7 @@ export class MatchesService {
         error?.response?.data,
       );
 
-      throw new HttpException(
-        'Match not found',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('Match not found', HttpStatus.NOT_FOUND);
     }
   }
 }

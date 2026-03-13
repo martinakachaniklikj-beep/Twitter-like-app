@@ -11,17 +11,23 @@ export interface ApiNotification {
 }
 
 export const notificationServices = {
-  async fetchNotifications(token: string, type?: NotificationKind | 'all'): Promise<ApiNotification[]> {
+  async fetchNotifications(
+    token: string,
+    type?: NotificationKind | 'all',
+  ): Promise<ApiNotification[]> {
     const params = new URLSearchParams();
     if (type && type !== 'all') {
       params.set('type', type);
     }
 
-    const res = await fetch(`${apiUrl}/notifications${params.toString() ? `?${params.toString()}` : ''}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const res = await fetch(
+      `${apiUrl}/notifications${params.toString() ? `?${params.toString()}` : ''}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
 
     if (!res.ok) {
       throw new Error('Failed to load notifications');
@@ -84,4 +90,3 @@ export const notificationServices = {
     }
   },
 };
-

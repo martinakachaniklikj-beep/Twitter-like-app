@@ -4,7 +4,12 @@ export interface ConversationListItem {
   id: string;
   type: string;
   updatedAt: string;
-  participants: { userId: string; username: string; displayName: string | null; avatarUrl: string | null }[];
+  participants: {
+    userId: string;
+    username: string;
+    displayName: string | null;
+    avatarUrl: string | null;
+  }[];
   lastMessage: {
     id: string;
     content: string;
@@ -22,7 +27,12 @@ export interface Conversation {
   id: string;
   type: string;
   updatedAt: string;
-  participants: { userId: string; username: string; displayName: string | null; avatarUrl: string | null }[];
+  participants: {
+    userId: string;
+    username: string;
+    displayName: string | null;
+    avatarUrl: string | null;
+  }[];
   isBlocked?: boolean;
   blockedByMe?: boolean;
   blockedByOther?: boolean;
@@ -62,7 +72,9 @@ export const chatServices = {
     });
     if (!res.ok) return null;
     const data = await res.json();
-    return data?.id ? { id: data.id, username: data.username, displayName: data.displayName } : null;
+    return data?.id
+      ? { id: data.id, username: data.username, displayName: data.displayName }
+      : null;
   },
 
   async listConversations(token: string): Promise<ConversationListItem[]> {
@@ -107,7 +119,11 @@ export const chatServices = {
     return res.json();
   },
 
-  async respondToGroupInvite(token: string, inviteId: string, action: 'accept' | 'deny'): Promise<GroupInvitePayload> {
+  async respondToGroupInvite(
+    token: string,
+    inviteId: string,
+    action: 'accept' | 'deny',
+  ): Promise<GroupInvitePayload> {
     const res = await fetch(`${apiUrl}/conversations/group-invites/${inviteId}/respond`, {
       method: 'POST',
       headers: {
@@ -141,10 +157,9 @@ export const chatServices = {
     const params = new URLSearchParams();
     if (before) params.set('before', before);
     params.set('limit', String(limit));
-    const res = await fetch(
-      `${apiUrl}/conversations/${conversationId}/messages?${params}`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
+    const res = await fetch(`${apiUrl}/conversations/${conversationId}/messages?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     if (!res.ok) throw new Error('Failed to load messages');
     return res.json();
   },

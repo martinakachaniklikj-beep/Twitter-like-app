@@ -9,4 +9,3 @@ export interface SavedCollection {
 export interface SavedTabProps {
   searchQuery?: string;
 }
-

@@ -2,12 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type Theme =
-  | 'light'
-  | 'dark'
-  | 'sakura'
-  | 'matcha'
-  | 'starry';
+export type Theme = 'light' | 'dark' | 'sakura' | 'matcha' | 'starry';
 
 interface ThemeContextType {
   theme: Theme;
@@ -17,37 +12,24 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+const themeKeys: Theme[] = ['light', 'dark', 'sakura', 'matcha', 'starry'];
+
+function getInitialTheme(): Theme {
+  if (typeof window === 'undefined') return 'light';
+  const saved = localStorage.getItem('theme');
+  if (saved && themeKeys.includes(saved as Theme)) return saved as Theme;
+  if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+  return 'light';
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('light');
-  const [mounted, setMounted] = useState(false);
+  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as Theme | null;
-
-    if (savedTheme) {
-      setThemeState(savedTheme);
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setThemeState('dark');
-    } else {
-      setThemeState('light');
-    }
-
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-
     const root = document.documentElement;
 
     // Clear previous theme-related classes
-    root.classList.remove(
-      'light',
-      'dark',
-      'theme-sakura',
-      'theme-matcha',
-      'theme-starry',
-    );
+    root.classList.remove('light', 'dark', 'theme-sakura', 'theme-matcha', 'theme-starry');
 
     // Derive base color mode (light / dark) from selected theme
     const isDarkLike = theme === 'dark' || theme === 'starry';
@@ -65,12 +47,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
 
     localStorage.setItem('theme', theme);
-  }, [theme, mounted]);
+  }, [theme]);
 
   const toggleTheme = () => {
     setThemeState((prev) => {
-      const isCurrentlyDark =
-        prev === 'dark' || prev === 'starry';
+      const isCurrentlyDark = prev === 'dark' || prev === 'starry';
       return isCurrentlyDark ? 'light' : 'dark';
     });
   };

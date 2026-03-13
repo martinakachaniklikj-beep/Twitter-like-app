@@ -39,8 +39,7 @@ export default function TrendingTab({
     enabled: !!user,
   });
 
-  const selectedHashtag =
-    activeHashtag ?? localActiveHashtag ?? trending[0]?.name ?? null;
+  const selectedHashtag = activeHashtag ?? localActiveHashtag ?? trending[0]?.name ?? null;
 
   return (
     <TrendingCard>
@@ -98,4 +97,3 @@ export default function TrendingTab({
     </TrendingCard>
   );
 }
-

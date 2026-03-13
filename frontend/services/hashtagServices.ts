@@ -6,7 +6,7 @@ export interface TrendingHashtag {
   postsCount: number;
 }
 
-export interface HashtagPostsResponse<TPost = any> {
+export interface HashtagPostsResponse<TPost = unknown> {
   data: TPost[];
   page: number;
   limit: number;
@@ -41,7 +41,7 @@ export const hashtagServices = {
     return response.json();
   },
 
-  async fetchPostsByHashtag<TPost = any>(
+  async fetchPostsByHashtag<TPost = unknown>(
     token: string,
     hashtag: string,
     page = 1,
@@ -53,14 +53,11 @@ export const hashtagServices = {
 
     const encoded = encodeURIComponent(hashtag.replace(/^#/, ''));
 
-    const response = await fetch(
-      `${apiUrl}/posts/by-hashtag/${encoded}?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    const response = await fetch(`${apiUrl}/posts/by-hashtag/${encoded}?${params.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
-    );
+    });
 
     if (!response.ok) {
       throw new Error('Failed to load posts for hashtag');
@@ -69,4 +66,3 @@ export const hashtagServices = {
     return response.json();
   },
 };
-

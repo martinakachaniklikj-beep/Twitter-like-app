@@ -26,18 +26,14 @@ export default function RegisterPage() {
       <ContentContainer>
         {/* Left side – image placeholder */}
         <ImageSection>
-          <ImagePlaceholder>
-            {RegisterLabels.imagePlaceholder}
-          </ImagePlaceholder>
+          <ImagePlaceholder>{RegisterLabels.imagePlaceholder}</ImagePlaceholder>
         </ImageSection>
 
         {/* Right side – heading + auth card */}
         <AuthSection>
           <HeadingBlock>
             <Heading>{RegisterLabels.title}</Heading>
-            <SubHeading>
-              {RegisterLabels.subtitle2}
-            </SubHeading>
+            <SubHeading>{RegisterLabels.subtitle2}</SubHeading>
           </HeadingBlock>
 
           <RegisterDialogCard />

@@ -53,9 +53,7 @@ export function LoginDialogCard({ onSuccess }: LoginDialogCardProps) {
     <Card className="w-full border border-border bg-white shadow-2xl dark:bg-zinc-900">
       <CardHeader>
         <CardTitle>Sign in to X</CardTitle>
-        <CardDescription>
-          Enter your email and password to continue.
-        </CardDescription>
+        <CardDescription>Enter your email and password to continue.</CardDescription>
         {error && (
           <p className="mt-2 rounded-xl border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">
             {error}
@@ -68,9 +66,7 @@ export function LoginDialogCard({ onSuccess }: LoginDialogCardProps) {
             <Field>
               <FieldContent>
                 <FieldTitle>Email</FieldTitle>
-                <FieldDescription>
-                  Use the email associated with your account.
-                </FieldDescription>
+                <FieldDescription>Use the email associated with your account.</FieldDescription>
                 <Input
                   id="email"
                   type="email"
@@ -84,9 +80,7 @@ export function LoginDialogCard({ onSuccess }: LoginDialogCardProps) {
             <Field>
               <FieldContent>
                 <FieldTitle>Password</FieldTitle>
-                <FieldDescription>
-                  Enter your password to sign in.
-                </FieldDescription>
+                <FieldDescription>Enter your password to sign in.</FieldDescription>
                 <Input
                   id="password"
                   type="password"
@@ -113,14 +107,10 @@ export function LoginDialogCard({ onSuccess }: LoginDialogCardProps) {
       </CardContent>
       <CardFooter className="justify-center space-x-2 text-sm">
         <span className="text-muted-foreground">Don&apos;t have an account?</span>
-        <Link
-          href="/register"
-          className="font-semibold text-primary hover:underline"
-        >
+        <Link href="/register" className="font-semibold text-primary hover:underline">
           Sign up
         </Link>
       </CardFooter>
     </Card>
   );
 }
-

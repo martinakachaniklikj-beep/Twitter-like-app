@@ -1,16 +1,16 @@
 /* Reusable create-post dialog that can be opened from any tab */
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Image as ImageIcon, BarChart2, X, Smile } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useComposer } from "@/contexts/ComposerContext";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import EmojiPicker from "emoji-picker-react";
-import { feedServices } from "./services/feedServices";
-import { feedLabels } from "./utils/labels";
+import { useEffect, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Image as ImageIcon, BarChart2, X, Smile } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useComposer } from '@/contexts/ComposerContext';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import EmojiPicker from 'emoji-picker-react';
+import { feedServices } from './services/feedServices';
+import { feedLabels } from './utils/labels';
 import {
   CreatePostForm,
   ModalCloseButton,
@@ -21,8 +21,8 @@ import {
   PostButton,
   PostButtonContainer,
   PostTextarea,
-} from "./FeedTab.styles";
-import { readFileAsDataURL } from "./utils/utils";
+} from './FeedTab.styles';
+import { readFileAsDataURL } from './utils/utils';
 
 type CreatePostDialogProps = {
   open: boolean;
@@ -85,11 +85,13 @@ export function CreatePostDialog({ open, onClose, initialContent }: CreatePostDi
         throw new Error('Not authenticated');
       }
 
-      let pollPayload: {
-        question?: string;
-        options: string[];
-        expiresAt: string;
-      } | undefined;
+      let pollPayload:
+        | {
+            question?: string;
+            options: string[];
+            expiresAt: string;
+          }
+        | undefined;
 
       if (isPollEnabled) {
         const options = [
@@ -131,7 +133,10 @@ export function CreatePostDialog({ open, onClose, initialContent }: CreatePostDi
   const onSubmit = (data: CreatePostFormValues) => {
     const hasPoll =
       isPollEnabled &&
-      (data.pollOption1?.trim() || data.pollOption2?.trim() || data.pollOption3?.trim() || data.pollOption4?.trim());
+      (data.pollOption1?.trim() ||
+        data.pollOption2?.trim() ||
+        data.pollOption3?.trim() ||
+        data.pollOption4?.trim());
     const hasContent = data.content.trim() || state.imageUrl || state.gifUrl || hasPoll;
     if (!hasContent) return;
     createPostMutation.mutate(data);
@@ -215,96 +220,98 @@ export function CreatePostDialog({ open, onClose, initialContent }: CreatePostDi
           {isPollEnabled && (
             <div
               style={{
-                marginTop: "12px",
-                borderTop: "1px solid rgba(148, 163, 184, 0.3)",
-                paddingTop: "12px",
+                marginTop: '12px',
+                borderTop: '1px solid rgba(148, 163, 184, 0.3)',
+                paddingTop: '12px',
               }}
             >
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <input
                   type="text"
                   placeholder="Poll question (optional)"
-                  {...register("pollQuestion")}
+                  {...register('pollQuestion')}
                   style={{
-                    width: "100%",
-                    padding: "8px 10px",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    background: "rgba(255, 255, 255, 0.05)",
-                    color: "white",
-                    fontSize: "14px",
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: 'white',
+                    fontSize: '14px',
                   }}
                 />
                 <input
                   type="text"
                   placeholder="Option 1"
-                  {...register("pollOption1")}
+                  {...register('pollOption1')}
                   style={{
-                    width: "100%",
-                    padding: "8px 10px",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    background: "rgba(255, 255, 255, 0.05)",
-                    color: "white",
-                    fontSize: "14px",
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: 'white',
+                    fontSize: '14px',
                   }}
                 />
                 <input
                   type="text"
                   placeholder="Option 2"
-                  {...register("pollOption2")}
+                  {...register('pollOption2')}
                   style={{
-                    width: "100%",
-                    padding: "8px 10px",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    background: "rgba(255, 255, 255, 0.05)",
-                    color: "white",
-                    fontSize: "14px",
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: 'white',
+                    fontSize: '14px',
                   }}
                 />
                 <input
                   type="text"
                   placeholder="Option 3 (optional)"
-                  {...register("pollOption3")}
+                  {...register('pollOption3')}
                   style={{
-                    width: "100%",
-                    padding: "8px 10px",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    background: "rgba(255, 255, 255, 0.05)",
-                    color: "white",
-                    fontSize: "14px",
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: 'white',
+                    fontSize: '14px',
                   }}
                 />
                 <input
                   type="text"
                   placeholder="Option 4 (optional)"
-                  {...register("pollOption4")}
+                  {...register('pollOption4')}
                   style={{
-                    width: "100%",
-                    padding: "8px 10px",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    background: "rgba(255, 255, 255, 0.05)",
-                    color: "white",
-                    fontSize: "14px",
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: 'white',
+                    fontSize: '14px',
                   }}
                 />
 
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
-                  <span style={{ fontSize: "12px", color: "rgba(255, 255, 255, 0.7)" }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}
+                >
+                  <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)' }}>
                     Poll duration
                   </span>
                   <select
-                    {...register("pollDurationMinutes", { valueAsNumber: true })}
+                    {...register('pollDurationMinutes', { valueAsNumber: true })}
                     style={{
-                      padding: "6px 10px",
-                      borderRadius: "8px",
-                      border: "1px solid rgba(255, 255, 255, 0.1)",
-                      background: "rgba(255, 255, 255, 0.05)",
-                      color: "white",
-                      fontSize: "12px",
+                      padding: '6px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      color: 'white',
+                      fontSize: '12px',
                     }}
                   >
                     <option value={5}>5 minutes</option>
@@ -528,6 +535,3 @@ export function CreatePostDialog({ open, onClose, initialContent }: CreatePostDi
     </ModalOverlay>
   );
 }
-
-
-

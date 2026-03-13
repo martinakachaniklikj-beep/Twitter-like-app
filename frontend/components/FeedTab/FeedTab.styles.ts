@@ -161,7 +161,10 @@ export const PostCard = styled.div`
   border: 1px solid rgb(var(--border));
   border-radius: 0.85rem;
   padding: 0.9rem 1rem;
-  transition: background-color 0.3s, box-shadow 0.3s, transform 0.15s;
+  transition:
+    background-color 0.3s,
+    box-shadow 0.3s,
+    transform 0.15s;
 
   &:hover {
     background: rgba(var(--accent), 0.12);
@@ -370,7 +373,7 @@ export const CommentItem = styled.div`
   /* Single unified comment style across all themes (fixed gray palette) */
   padding: 0.75rem;
   margin-bottom: 0.5rem;
-  background:rgb(39, 45, 58); /* gray-200 */
+  background: rgb(39, 45, 58); /* gray-200 */
   border-radius: 0.75rem;
   border: 1px solidrgb(75, 87, 106); /* gray-300 */
 `;

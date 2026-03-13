@@ -41,7 +41,8 @@ export class FollowService {
         },
       });
 
-      const actorName = follower?.displayName || follower?.username || 'Someone';
+      const actorName =
+        follower?.displayName || follower?.username || 'Someone';
 
       const notificationMessage = `${actorName} started following you.`;
 
@@ -53,14 +54,17 @@ export class FollowService {
         },
       });
 
-      this.notifications.broadcastInAppNotification(notification.userId, notification);
-
-      const targetUser: { fcmToken: string | null } | null = await (this.prisma as any).user.findUnique(
-        {
-          where: { id: followingId },
-          select: { fcmToken: true },
-        },
+      this.notifications.broadcastInAppNotification(
+        notification.userId,
+        notification,
       );
+
+      const targetUser: { fcmToken: string | null } | null = await (
+        this.prisma as any
+      ).user.findUnique({
+        where: { id: followingId },
+        select: { fcmToken: true },
+      });
 
       await this.notifications.sendPushNotification(
         targetUser?.fcmToken,

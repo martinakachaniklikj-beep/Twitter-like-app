@@ -61,7 +61,6 @@ import {
 } from './profile.styles';
 import { UserProfile, Post } from './types/types';
 
-
 export default function UserProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = use(params);
 
@@ -203,7 +202,6 @@ function UserProfileContent({ username }: { username: string }) {
     birthDateValue.getMonth() === today.getMonth() &&
     birthDateValue.getDate() === today.getDate();
 
-
   return (
     <PageContainer>
       <Header>
@@ -250,9 +248,7 @@ function UserProfileContent({ username }: { username: string }) {
                       }}
                     />
                   ) : (
-                    <AvatarText>
-                      {(profile.displayName || username)[0]?.toUpperCase()}
-                    </AvatarText>
+                    <AvatarText>{(profile.displayName || username)[0]?.toUpperCase()}</AvatarText>
                   )}
                 </Avatar>
 
@@ -297,22 +293,22 @@ function UserProfileContent({ username }: { username: string }) {
             </ProfileHeader>
 
             {isBirthdayToday && (
-  <BirthdayBanner>
-    <BirthdayContent>
-      <Cake size={18} />
-      <span>
-        {isOwnProfile
-          ? 'Today is your birthday – let your friends celebrate with you!'
-          : `Today is @${profile.username}'s birthday.`}
-      </span>
-    </BirthdayContent>
-  </BirthdayBanner>
-)}
+              <BirthdayBanner>
+                <BirthdayContent>
+                  <Cake size={18} />
+                  <span>
+                    {isOwnProfile
+                      ? 'Today is your birthday – let your friends celebrate with you!'
+                      : `Today is @${profile.username}'s birthday.`}
+                  </span>
+                </BirthdayContent>
+              </BirthdayBanner>
+            )}
 
-{isBlocked ? (
-  <BlockedMessage>
-    You blocked @{username}. Their profile details and posts are hidden.
-  </BlockedMessage>
+            {isBlocked ? (
+              <BlockedMessage>
+                You blocked @{username}. Their profile details and posts are hidden.
+              </BlockedMessage>
             ) : (
               <>
                 {profile.bio && <Bio>{profile.bio}</Bio>}
@@ -328,9 +324,7 @@ function UserProfileContent({ username }: { username: string }) {
                   {profile.birthDate && profile.isMutualFollower && (
                     <MetaItem>
                       <Calendar size={16} />
-                      <span>
-                        Birthday: {new Date(profile.birthDate).toLocaleDateString()}
-                      </span>
+                      <span>Birthday: {new Date(profile.birthDate).toLocaleDateString()}</span>
                     </MetaItem>
                   )}
                 </MetaInfo>
@@ -388,9 +382,7 @@ function UserProfileContent({ username }: { username: string }) {
                         </FeedPostAuthorName>
                         <FeedPostAuthorUsername>@{profile.username}</FeedPostAuthorUsername>
                         <FeedPostDivider>·</FeedPostDivider>
-                        <FeedPostDate>
-                          {new Date(post.createdAt).toLocaleDateString()}
-                        </FeedPostDate>
+                        <FeedPostDate>{new Date(post.createdAt).toLocaleDateString()}</FeedPostDate>
                       </FeedPostHeader>
 
                       {post.content && <FeedPostText>{post.content}</FeedPostText>}

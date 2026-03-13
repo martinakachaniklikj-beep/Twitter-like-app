@@ -87,8 +87,7 @@ export function StocksSidebarCard() {
         padding: '0.95rem 1rem',
         borderRadius: '1rem',
         border: 'none',
-        background:
-          'linear-gradient(135deg, rgba(var(--card), 0.75), rgba(15, 23, 42, 0.28))',
+        background: 'linear-gradient(135deg, rgba(var(--card), 0.75), rgba(15, 23, 42, 0.28))',
         backdropFilter: 'blur(18px)',
         boxShadow: 'none',
         position: 'relative',
@@ -155,14 +154,9 @@ export function StocksSidebarCard() {
                   : '1px solid rgba(var(--border), 0.8)',
               fontSize: '0.7rem',
               fontWeight: 500,
-              background:
-                selectedSymbol === sym
-                  ? 'rgba(var(--primary), 0.08)'
-                  : 'transparent',
+              background: selectedSymbol === sym ? 'rgba(var(--primary), 0.08)' : 'transparent',
               color:
-                selectedSymbol === sym
-                  ? 'rgb(var(--primary))'
-                  : 'rgb(var(--muted-foreground))',
+                selectedSymbol === sym ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
               cursor: 'pointer',
             }}
           >
@@ -173,158 +167,147 @@ export function StocksSidebarCard() {
 
       {/* Static placeholder data while live API calls are disabled */}
       {quote && (
-          <>
+        <>
+          <div
+            style={{
+              position: 'relative',
+              marginBottom: '0.6rem',
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+            }}
+          >
             <div
               style={{
-                position: 'relative',
-                marginBottom: '0.6rem',
                 display: 'flex',
-                alignItems: 'baseline',
-                justifyContent: 'space-between',
+                flexDirection: 'column',
+                gap: '0.1rem',
+                letterSpacing: '0.08em',
               }}
             >
-              <div
+              <span
                 style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.1rem',
-                  letterSpacing: '0.08em',
+                  fontWeight: 600,
+                  letterSpacing: '0.03em',
                 }}
               >
-                <span
-                  style={{
-                    fontWeight: 600,
-                    letterSpacing: '0.03em',
-                  }}
-                >
-                  {quote.symbol}
-                </span>
-                <span
-                  style={{
-                    fontSize: '0.95rem',
-                    fontWeight: 600,
-                  }}
-                >
-                  {quote.price != null ? `$${quote.price.toFixed(2)}` : '—'}
-                </span>
-              </div>
-              <div
+                {quote.symbol}
+              </span>
+              <span
                 style={{
-                  textAlign: 'right',
-                  fontSize: '0.8rem',
-                  color: changeColor,
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
                 }}
               >
-                <div>
-                  {quote.change != null
-                    ? `${quote.change > 0 ? '+' : ''}${quote.change.toFixed(2)}`
-                    : '—'}
-                </div>
-                <div>
-                  {quote.changePercent != null
-                    ? `${quote.changePercent > 0 ? '+' : ''}${quote.changePercent.toFixed(2)}%`
-                    : ''}
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                position: 'relative',
-                width: '100%',
-                height: 70,
-                marginBottom: '0.4rem',
-              }}
-            >
-              {points.length > 1 ? (
-                <svg
-                  viewBox="0 0 100 100"
-                  preserveAspectRatio="none"
-                  style={{ width: '100%', height: '100%' }}
-                >
-                  <defs>
-                    <linearGradient
-                      id="stockDotGlow"
-                      x1="0"
-                      y1="0"
-                      x2="1"
-                      y2="0"
-                    >
-                      <stop offset="0%" stopColor={chartColor} stopOpacity="1" />
-                      <stop
-                        offset="100%"
-                        stopColor={chartColor}
-                        stopOpacity="0.4"
-                      />
-                    </linearGradient>
-                  </defs>
-
-                  {/* subtle horizontal grid lines */}
-                  {[25, 50, 75].map((y) => (
-                    <line
-                      key={y}
-                      x1="0"
-                      x2="100"
-                      y1={y}
-                      y2={y}
-                      stroke="rgba(148, 163, 184, 0.18)"
-                      strokeWidth="0.2"
-                    />
-                  ))}
-
-                  {/* glowing stroke behind main line */}
-                  <polyline
-                    fill="none"
-                    stroke={chartColor}
-                    strokeWidth={3.4}
-                    strokeOpacity={0.35}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    points={points.map((p) => `${p.x},${p.y}`).join(' ')}
-                  />
-
-                  {/* bright orange main line */}
-                  <polyline
-                    fill="none"
-                    stroke="url(#stockDotGlow)"
-                    strokeWidth={1.8}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    points={points.map((p) => `${p.x},${p.y}`).join(' ')}
-                  />
-                </svg>
-              ) : (
-                <div
-                  style={{
-                    fontSize: '0.75rem',
-                    color: 'rgb(var(--muted-foreground))',
-                    textAlign: 'center',
-                    paddingTop: '1rem',
-                  }}
-                >
-                  Not enough history to draw a chart yet.
-                </div>
-              )}
-            </div>
-
-            <div
-              style={{
-                fontSize: '0.7rem',
-                color: 'rgb(var(--muted-foreground))',
-                display: 'flex',
-                justifyContent: 'space-between',
-                borderTop: '1px solid darkgray',
-                paddingTop: '0.35rem',
-              }}
-            >
-              <span>Last {effectiveHistory.length} days</span>
-              <span>
-                Range: {min.toFixed(2)} – {max.toFixed(2)}
+                {quote.price != null ? `$${quote.price.toFixed(2)}` : '—'}
               </span>
             </div>
-          </>
-        )}
+            <div
+              style={{
+                textAlign: 'right',
+                fontSize: '0.8rem',
+                color: changeColor,
+              }}
+            >
+              <div>
+                {quote.change != null
+                  ? `${quote.change > 0 ? '+' : ''}${quote.change.toFixed(2)}`
+                  : '—'}
+              </div>
+              <div>
+                {quote.changePercent != null
+                  ? `${quote.changePercent > 0 ? '+' : ''}${quote.changePercent.toFixed(2)}%`
+                  : ''}
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              position: 'relative',
+              width: '100%',
+              height: 70,
+              marginBottom: '0.4rem',
+            }}
+          >
+            {points.length > 1 ? (
+              <svg
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                style={{ width: '100%', height: '100%' }}
+              >
+                <defs>
+                  <linearGradient id="stockDotGlow" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor={chartColor} stopOpacity="1" />
+                    <stop offset="100%" stopColor={chartColor} stopOpacity="0.4" />
+                  </linearGradient>
+                </defs>
+
+                {/* subtle horizontal grid lines */}
+                {[25, 50, 75].map((y) => (
+                  <line
+                    key={y}
+                    x1="0"
+                    x2="100"
+                    y1={y}
+                    y2={y}
+                    stroke="rgba(148, 163, 184, 0.18)"
+                    strokeWidth="0.2"
+                  />
+                ))}
+
+                {/* glowing stroke behind main line */}
+                <polyline
+                  fill="none"
+                  stroke={chartColor}
+                  strokeWidth={3.4}
+                  strokeOpacity={0.35}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  points={points.map((p) => `${p.x},${p.y}`).join(' ')}
+                />
+
+                {/* bright orange main line */}
+                <polyline
+                  fill="none"
+                  stroke="url(#stockDotGlow)"
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  points={points.map((p) => `${p.x},${p.y}`).join(' ')}
+                />
+              </svg>
+            ) : (
+              <div
+                style={{
+                  fontSize: '0.75rem',
+                  color: 'rgb(var(--muted-foreground))',
+                  textAlign: 'center',
+                  paddingTop: '1rem',
+                }}
+              >
+                Not enough history to draw a chart yet.
+              </div>
+            )}
+          </div>
+
+          <div
+            style={{
+              fontSize: '0.7rem',
+              color: 'rgb(var(--muted-foreground))',
+              display: 'flex',
+              justifyContent: 'space-between',
+              borderTop: '1px solid darkgray',
+              paddingTop: '0.35rem',
+            }}
+          >
+            <span>Last {effectiveHistory.length} days</span>
+            <span>
+              Range: {min.toFixed(2)} – {max.toFixed(2)}
+            </span>
+          </div>
+        </>
+      )}
     </div>
   );
 }
-

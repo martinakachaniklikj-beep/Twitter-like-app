@@ -148,13 +148,14 @@ export const FollowButton = styled.button<{ $isFollowing: boolean }>`
   font-weight: 500;
   transition: all 0.2s;
   cursor: pointer;
-  border: ${props => props.$isFollowing ? '1px solid rgb(var(--border))' : 'none'};
-  background: ${props => props.$isFollowing ? 'rgb(var(--secondary))' : 'rgb(var(--primary))'};
-  color: ${props => props.$isFollowing ? 'rgb(var(--secondary-foreground))' : 'rgb(var(--primary-foreground))'};
+  border: ${(props) => (props.$isFollowing ? '1px solid rgb(var(--border))' : 'none')};
+  background: ${(props) => (props.$isFollowing ? 'rgb(var(--secondary))' : 'rgb(var(--primary))')};
+  color: ${(props) =>
+    props.$isFollowing ? 'rgb(var(--secondary-foreground))' : 'rgb(var(--primary-foreground))'};
 
   &:hover {
     opacity: 0.9;
-    background: ${props => props.$isFollowing ? 'rgb(var(--accent))' : 'rgb(var(--primary))'};
+    background: ${(props) => (props.$isFollowing ? 'rgb(var(--accent))' : 'rgb(var(--primary))')};
   }
 
   &:disabled {
@@ -174,7 +175,10 @@ export const BlockButton = styled.button`
   border: 1px solid #b91c1c;
   background: #ef4444;
   color: white;
-  transition: background-color 0.2s, transform 0.1s, box-shadow 0.1s;
+  transition:
+    background-color 0.2s,
+    transform 0.1s,
+    box-shadow 0.1s;
 
   &:hover {
     background: #dc2626;
@@ -275,17 +279,12 @@ export const PostMeta = styled.div`
   color: rgb(var(--muted-foreground));
 `;
 
-
 export const BirthdayBanner = styled.div`
   margin-top: 12px;
   margin-bottom: 4px;
   padding: 10px 12px;
   border-radius: 12px;
-  background: linear-gradient(
-    135deg,
-    rgba(251, 191, 36, 0.16),
-    rgba(59, 130, 246, 0.16)
-  );
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.16), rgba(59, 130, 246, 0.16));
   border: 1px solid rgba(251, 191, 36, 0.4);
 `;
 

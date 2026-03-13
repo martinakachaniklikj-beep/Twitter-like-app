@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled from 'styled-components';
 
 export const MessageText = styled.div`
   white-space: pre-wrap;
@@ -120,7 +120,7 @@ export const MetaTime = styled.span`
 
 export const MetaStatus = styled.span<{ $read?: boolean }>`
   font-weight: ${({ $read }) => ($read ? 600 : 400)};
-  color: ${({ $read }) => ($read ? "var(--foreground)" : "var(--foreground); opacity: 0.7")};
+  color: ${({ $read }) => ($read ? 'var(--foreground)' : 'var(--foreground); opacity: 0.7')};
 `;
 
 export const MetaSending = styled.span`

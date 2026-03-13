@@ -50,7 +50,11 @@ export const MessageBubbleAvatarWrap = styled.div`
 
 type ChatTheme = 'standard' | 'love' | 'friends';
 
-export const MessageBubbleBubble = styled.div<{ $isOwn?: boolean; $theme?: ChatTheme; $status?: string }>`
+export const MessageBubbleBubble = styled.div<{
+  $isOwn?: boolean;
+  $theme?: ChatTheme;
+  $status?: string;
+}>`
   padding: 0.55rem 0.95rem;
   border-radius: 1.2rem;
   max-width: min(78%, 420px);
@@ -81,14 +85,10 @@ export const MessageBubbleBubble = styled.div<{ $isOwn?: boolean; $theme?: ChatT
     }
 
     if ($theme === 'love') {
-      return $isOwn
-        ? 'linear-gradient(135deg, #fb7185, #ec4899)'
-        : 'rgba(var(--card), 0.9)';
+      return $isOwn ? 'linear-gradient(135deg, #fb7185, #ec4899)' : 'rgba(var(--card), 0.9)';
     }
     if ($theme === 'friends') {
-      return $isOwn
-        ? 'linear-gradient(135deg, #0ea5e9, #22c55e)'
-        : 'rgba(var(--card), 0.9)';
+      return $isOwn ? 'linear-gradient(135deg, #0ea5e9, #22c55e)' : 'rgba(var(--card), 0.9)';
     }
     return $isOwn ? 'rgb(var(--primary))' : 'rgb(var(--muted))';
   }};
@@ -102,8 +102,7 @@ export const MessageBubbleBubble = styled.div<{ $isOwn?: boolean; $theme?: ChatT
     $theme === 'love'
       ? '0 2px 8px rgba(244, 114, 182, 0.35)'
       : $theme === 'friends'
-      ? '0 2px 8px rgba(56, 189, 248, 0.3)'
-      : '0 1px 4px rgba(15, 23, 42, 0.12)'};
-  opacity: ${({ $isOwn, $status }) =>
-    $isOwn && $status === 'read' ? 0.85 : 1};
+        ? '0 2px 8px rgba(56, 189, 248, 0.3)'
+        : '0 1px 4px rgba(15, 23, 42, 0.12)'};
+  opacity: ${({ $isOwn, $status }) => ($isOwn && $status === 'read' ? 0.85 : 1)};
 `;

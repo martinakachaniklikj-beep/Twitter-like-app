@@ -4,13 +4,13 @@ import {
   ChatItem,
   ChatItemName,
   ChatItemPreview,
-} from "./chat-sidebar.styled";
-import { CHAT_LABELS } from "./types";
+} from './chat-sidebar.styled';
+import { CHAT_LABELS } from './types';
 
 export function ChatSidebar() {
   const chats = [
-    { id: 1, name: "John", last: "Hey!" },
-    { id: 2, name: "Anna", last: "See you later" },
+    { id: 1, name: 'John', last: 'Hey!' },
+    { id: 2, name: 'Anna', last: 'See you later' },
   ];
 
   return (

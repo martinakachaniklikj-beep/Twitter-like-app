@@ -1,9 +1,4 @@
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 import { storage } from '../lib/firebase';
 
@@ -19,16 +14,10 @@ const validateImage = (file: File) => {
   }
 };
 
-export const uploadAvatar = async (
-  file: File,
-  userId: string,
-): Promise<string> => {
+export const uploadAvatar = async (file: File, userId: string): Promise<string> => {
   validateImage(file);
 
-  const storageRef = ref(
-    storage,
-    `avatars/${userId}/${Date.now()}-${file.name}`,
-  );
+  const storageRef = ref(storage, `avatars/${userId}/${Date.now()}-${file.name}`);
 
   const snapshot = await uploadBytes(storageRef, file);
 
@@ -37,16 +26,10 @@ export const uploadAvatar = async (
   return downloadURL;
 };
 
-export const uploadCover = async (
-  file: File,
-  userId: string,
-): Promise<string> => {
+export const uploadCover = async (file: File, userId: string): Promise<string> => {
   validateImage(file);
 
-  const storageRef = ref(
-    storage,
-    `covers/${userId}/${Date.now()}-${file.name}`,
-  );
+  const storageRef = ref(storage, `covers/${userId}/${Date.now()}-${file.name}`);
 
   const snapshot = await uploadBytes(storageRef, file);
 
@@ -55,16 +38,10 @@ export const uploadCover = async (
   return downloadURL;
 };
 
-export const uploadPostImage = async (
-  file: File,
-  userId: string,
-) => {
+export const uploadPostImage = async (file: File, userId: string) => {
   validateImage(file);
 
-  const imageRef = ref(
-    storage,
-    `posts/${userId}/${Date.now()}`,
-  );
+  const imageRef = ref(storage, `posts/${userId}/${Date.now()}`);
 
   await uploadBytes(imageRef, file);
 

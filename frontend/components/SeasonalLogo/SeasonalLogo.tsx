@@ -110,43 +110,27 @@ const SeasonalLogo: React.FC = () => {
 
   const renderCatLogo = () => (
     <CatLogo>
-
       <CatFace>
-
         <CatEar $side="left" />
         <CatEar $side="right" />
 
         <CatEyeRow>
-
           <CatEye $isSquinting={isHovering}>
-            {!isHovering && (
-              <CatPupil
-                $offsetX={cursorOffset.x}
-                $offsetY={cursorOffset.y}
-              />
-            )}
+            {!isHovering && <CatPupil $offsetX={cursorOffset.x} $offsetY={cursorOffset.y} />}
           </CatEye>
 
           <CatEye $isSquinting={isHovering}>
-            {!isHovering && (
-              <CatPupil
-                $offsetX={cursorOffset.x}
-                $offsetY={cursorOffset.y}
-              />
-            )}
+            {!isHovering && <CatPupil $offsetX={cursorOffset.x} $offsetY={cursorOffset.y} />}
           </CatEye>
-
         </CatEyeRow>
 
         {/* <CatNose />
         <CatMouth />
         <CatWhiskers /> */}
-
       </CatFace>
-
     </CatLogo>
   );
-  
+
   return (
     <LogoWrapper
       ref={logoRef}
@@ -162,4 +146,3 @@ const SeasonalLogo: React.FC = () => {
 };
 
 export default SeasonalLogo;
-

@@ -95,12 +95,7 @@ export function RegisterDialogCard({ onSuccess }: RegisterDialogCardProps) {
     }
 
     try {
-      await registerUser(
-        email,
-        data.password,
-        data.username,
-        data.birthDate,
-      );
+      await registerUser(email, data.password, data.username, data.birthDate);
       onSuccess?.();
       router.push('/home');
     } catch (err: any) {
@@ -112,9 +107,7 @@ export function RegisterDialogCard({ onSuccess }: RegisterDialogCardProps) {
     <Card className="w-full border border-border bg-white shadow-2xl dark:bg-zinc-900">
       <CardHeader>
         <CardTitle>Create your profile</CardTitle>
-        <CardDescription>
-          Sign up in just a few steps to start posting.
-        </CardDescription>
+        <CardDescription>Sign up in just a few steps to start posting.</CardDescription>
         {error && (
           <p className="mt-2 rounded-xl border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">
             {error}
@@ -122,19 +115,14 @@ export function RegisterDialogCard({ onSuccess }: RegisterDialogCardProps) {
         )}
       </CardHeader>
       <CardContent>
-        <form
-          className="space-y-5"
-          onSubmit={handleSubmit(onSubmit)}
-        >
+        <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
             {step === 1 && (
               <>
                 <Field>
                   <FieldContent>
                     <FieldTitle>Username</FieldTitle>
-                    <FieldDescription>
-                      This is how others will see you on X.
-                    </FieldDescription>
+                    <FieldDescription>This is how others will see you on X.</FieldDescription>
                     <Input
                       id="username"
                       type="text"
@@ -148,9 +136,7 @@ export function RegisterDialogCard({ onSuccess }: RegisterDialogCardProps) {
                 <Field>
                   <FieldContent>
                     <FieldTitle>Phone</FieldTitle>
-                    <FieldDescription>
-                      Add a phone number so friends can find you.
-                    </FieldDescription>
+                    <FieldDescription>Add a phone number so friends can find you.</FieldDescription>
                     <div className="flex gap-2">
                       <select
                         className="w-28 rounded-md border border-input bg-background px-2 py-2 text-sm text-foreground shadow-sm"
@@ -212,9 +198,7 @@ export function RegisterDialogCard({ onSuccess }: RegisterDialogCardProps) {
                 <Field>
                   <FieldContent>
                     <FieldTitle>Password</FieldTitle>
-                    <FieldDescription>
-                      Use at least 6 characters.
-                    </FieldDescription>
+                    <FieldDescription>Use at least 6 characters.</FieldDescription>
                     <Input
                       id="password"
                       type="password"
@@ -231,9 +215,7 @@ export function RegisterDialogCard({ onSuccess }: RegisterDialogCardProps) {
                 <Field>
                   <FieldContent>
                     <FieldTitle>Confirm password</FieldTitle>
-                    <FieldDescription>
-                      Re-enter your password to confirm.
-                    </FieldDescription>
+                    <FieldDescription>Re-enter your password to confirm.</FieldDescription>
                     <Input
                       id="confirmPassword"
                       type="password"
@@ -315,14 +297,10 @@ export function RegisterDialogCard({ onSuccess }: RegisterDialogCardProps) {
       </CardContent>
       <CardFooter className="justify-center space-x-2 text-sm">
         <span className="text-muted-foreground">Already have an account?</span>
-        <Link
-          href="/login"
-          className="font-semibold text-primary hover:underline"
-        >
+        <Link href="/login" className="font-semibold text-primary hover:underline">
           Sign in
         </Link>
       </CardFooter>
     </Card>
   );
 }
-

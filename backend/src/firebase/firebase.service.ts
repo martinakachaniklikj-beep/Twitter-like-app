@@ -19,11 +19,9 @@ export class FirebaseService {
             }),
           });
         } catch (error) {
-          // eslint-disable-next-line no-console
           console.error('Failed to initialize Firebase Admin SDK', error);
         }
       } else {
-        // eslint-disable-next-line no-console
         console.warn(
           'Firebase Admin SDK not initialized: missing FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL or FIREBASE_PRIVATE_KEY environment variables.',
         );
@@ -35,4 +33,3 @@ export class FirebaseService {
     return admin.auth().verifyIdToken(token);
   }
 }
-

@@ -11,13 +11,13 @@ export type Message = {
   senderId: string;
   conversationId: string;
   createdAt: string;
-  status?: "sending" | "sent" | "delivered" | "read";
+  status?: 'sending' | 'sent' | 'delivered' | 'read';
   attachments?: ChatAttachment[];
 };
 
-export type ChatTheme = "standard" | "love" | "friends";
+export type ChatTheme = 'standard' | 'love' | 'friends';
 
-export type ChatType = "direct" | "group";
+export type ChatType = 'direct' | 'group';
 
 export interface ChatContainerState {
   selectedConversationId: string | null;
@@ -70,7 +70,7 @@ export interface MessageBubbleProps {
   avatar?: string;
   isOwn?: boolean;
   createdAt?: string;
-  status?: Message["status"];
+  status?: Message['status'];
   theme?: ChatTheme;
 }
 

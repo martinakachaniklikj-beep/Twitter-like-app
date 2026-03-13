@@ -96,6 +96,9 @@ export class HashtagsService {
           postsCount: g._count.hashtagId as number,
         };
       })
-      .filter((item): item is { id: string; name: string; postsCount: number } => !!item);
+      .filter(
+        (item): item is { id: string; name: string; postsCount: number } =>
+          !!item,
+      );
   }
 }

@@ -1,5 +1,3 @@
-/* eslint-disable jsx-a11y/click-events-have-key-events */
-/* eslint-disable jsx-a11y/no-static-element-interactions */
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -9,10 +7,24 @@ import { aiServices } from '@/services/aiServices';
 
 import type { InspirationSlide } from './types/types';
 import { ROTATION_INTERVAL_MS } from './types/constants';
-import { Card, Header, TitleBlock, Title, Subtitle, DotsWrapper, Carousel, Slides, Slide, SlideText, PremiumButton, CarouselDot } from './AiInspirationCard.styled';
+import {
+  Card,
+  Header,
+  TitleBlock,
+  Title,
+  Subtitle,
+  DotsWrapper,
+  Carousel,
+  Slides,
+  Slide,
+  SlideText,
+  PremiumButton,
+  CarouselDot,
+} from './AiInspirationCard.styled';
 
 const FALLBACK_QUOTE = '"Creativity is intelligence having fun." — Share something kind today.';
-const FALLBACK_JOKE = 'Why did the tweet cross the timeline? To get a little more engagement on the other side.';
+const FALLBACK_JOKE =
+  'Why did the tweet cross the timeline? To get a little more engagement on the other side.';
 
 export function AiInspirationCard() {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -62,8 +74,7 @@ export function AiInspirationCard() {
         kind: 'premium',
         title: 'Daily Wit',
         subtitle: 'Unlock Premium',
-        body:
-          'Upgrade to Premium to unlock unlimited AI quotes, smarter inspiration, and tailored suggestions for your posts.',
+        body: 'Upgrade to Premium to unlock unlimited AI quotes, smarter inspiration, and tailored suggestions for your posts.',
         ctaLabel: 'Subscribe to Premium',
       },
     ],
@@ -111,9 +122,7 @@ export function AiInspirationCard() {
               <SlideText>{slide.body}</SlideText>
 
               {slide.kind === 'premium' && slide.ctaLabel && (
-                <PremiumButton disabled={disabled}>
-                  {slide.ctaLabel}
-                </PremiumButton>
+                <PremiumButton disabled={disabled}>{slide.ctaLabel}</PremiumButton>
               )}
             </Slide>
           ))}

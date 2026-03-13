@@ -37,9 +37,7 @@ export class AiController {
   }
 
   @Post('describe-image')
-  async describeImage(
-    @Body() body: { base64: string; mimeType: string },
-  ) {
+  async describeImage(@Body() body: { base64: string; mimeType: string }) {
     return this.aiService.describeImageFromBase64(body.base64, body.mimeType);
   }
 

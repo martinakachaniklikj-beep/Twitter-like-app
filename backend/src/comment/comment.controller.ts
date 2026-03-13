@@ -26,11 +26,7 @@ export class CommentController {
     @Param('postId') postId: string,
     @Body() body: { content: string },
   ) {
-    return this.commentService.create(
-      req.user.uid,
-      postId,
-      body.content,
-    );
+    return this.commentService.create(req.user.uid, postId, body.content);
   }
 
   @Get(':postId')

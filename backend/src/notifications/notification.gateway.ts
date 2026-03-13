@@ -15,7 +15,9 @@ const USER_ROOM_PREFIX = 'user:';
   cors: { origin: '*' },
   path: '/socket.io',
 })
-export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class NotificationsGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server!: Server;
 
@@ -26,11 +28,12 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
   async handleConnection(client: Socket) {
     const token =
-      client.handshake?.auth?.token ??
-      client.handshake?.query?.token;
+      client.handshake?.auth?.token ?? client.handshake?.query?.token;
 
     if (!token) {
-      this.logger.warn(`Notifications socket ${client.id} connected without token`);
+      this.logger.warn(
+        `Notifications socket ${client.id} connected without token`,
+      );
       client.disconnect();
       return;
     }
@@ -44,7 +47,9 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       const room = `${USER_ROOM_PREFIX}${userId}`;
       client.join(room);
 
-      this.logger.log(`Notifications socket ${client.id} authenticated as ${userId}`);
+      this.logger.log(
+        `Notifications socket ${client.id} authenticated as ${userId}`,
+      );
     } catch (err) {
       this.logger.warn(`Notifications socket ${client.id} invalid token`);
       client.disconnect();
@@ -61,4 +66,3 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     this.server.to(room).emit('notification:new', payload);
   }
 }
-

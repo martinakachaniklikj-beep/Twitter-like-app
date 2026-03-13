@@ -16,7 +16,7 @@ import type { ApiNotification } from '@/services/notificationServices';
 
 const socketUrl =
   typeof window !== 'undefined'
-    ? (process.env.NEXT_PUBLIC_WS_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001')
+    ? process.env.NEXT_PUBLIC_WS_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
     : '';
 
 interface ChatSocketContextType {
@@ -30,7 +30,9 @@ interface ChatSocketContextType {
   onMessageNew: (cb: (message: ApiMessage) => void) => () => void;
   onNotificationNew: (cb: (notification: ApiNotification) => void) => () => void;
   emitTyping: (conversationId: string, isTyping: boolean) => void;
-  onTyping: (cb: (data: { conversationId: string; userId: string; isTyping: boolean }) => void) => () => void;
+  onTyping: (
+    cb: (data: { conversationId: string; userId: string; isTyping: boolean }) => void,
+  ) => () => void;
 }
 
 const ChatSocketContext = createContext<ChatSocketContextType | null>(null);
@@ -87,24 +89,21 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
     socketRef.current?.emit('conversation:leave', { conversationId });
   }, []);
 
-  const sendMessage = useCallback(
-    async (conversationId: string, content: string) => {
-      return new Promise<{ ok?: boolean; error?: string; message?: ApiMessage }>((resolve) => {
-        if (!socketRef.current) {
-          resolve({ error: 'Not connected' });
-          return;
-        }
-        socketRef.current.emit(
-          'message:send',
-          { conversationId, content },
-          (res: { ok?: boolean; error?: string; message?: ApiMessage }) => {
-            resolve(res ?? {});
-          },
-        );
-      });
-    },
-    [],
-  );
+  const sendMessage = useCallback(async (conversationId: string, content: string) => {
+    return new Promise<{ ok?: boolean; error?: string; message?: ApiMessage }>((resolve) => {
+      if (!socketRef.current) {
+        resolve({ error: 'Not connected' });
+        return;
+      }
+      socketRef.current.emit(
+        'message:send',
+        { conversationId, content },
+        (res: { ok?: boolean; error?: string; message?: ApiMessage }) => {
+          resolve(res ?? {});
+        },
+      );
+    });
+  }, []);
 
   const onMessageNew = useCallback((cb: (message: ApiMessage) => void) => {
     listenersRef.current.add(cb);
@@ -146,11 +145,7 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
     onTyping,
   };
 
-  return (
-    <ChatSocketContext.Provider value={value}>
-      {children}
-    </ChatSocketContext.Provider>
-  );
+  return <ChatSocketContext.Provider value={value}>{children}</ChatSocketContext.Provider>;
 }
 
 export function useChatSocket() {

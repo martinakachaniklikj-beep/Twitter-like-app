@@ -107,7 +107,7 @@ export default function ProfileTab() {
     mutationFn: async (data: UpdateProfilePayload) => {
       const token = await user?.getIdToken();
       if (!token) throw new Error('Not authenticated');
-      console.log('mutation', data)
+      console.log('mutation', data);
       return profileServices.updateProfile(token, data);
     },
     onSuccess: () => {
@@ -169,7 +169,7 @@ export default function ProfileTab() {
       <ProfileCard>
         <CoverImage
           style={
-            (coverPreview || profile?.coverUrl)
+            coverPreview || profile?.coverUrl
               ? {
                   backgroundImage: `url("${coverPreview || profile?.coverUrl || ''}")`,
                   backgroundSize: 'cover',
@@ -183,10 +183,7 @@ export default function ProfileTab() {
           <ProfileHeader>
             <ProfileHeaderLeft>
               <Avatar>
-                {(
-                  avatarPreview ||
-                  profile?.avatarUrl
-                ) ? (
+                {avatarPreview || profile?.avatarUrl ? (
                   <img
                     src={avatarPreview || profile?.avatarUrl || ''}
                     alt="Avatar"
@@ -198,9 +195,7 @@ export default function ProfileTab() {
                     }}
                   />
                 ) : (
-                  <AvatarText>
-                    {user?.displayName?.[0]?.toUpperCase()}
-                  </AvatarText>
+                  <AvatarText>{user?.displayName?.[0]?.toUpperCase()}</AvatarText>
                 )}
               </Avatar>
 
@@ -223,11 +218,7 @@ export default function ProfileTab() {
               <InputGroup>
                 <Label>{profileLabels.bio}</Label>
                 <div style={{ position: 'relative' }}>
-                  <Textarea
-                    rows={3}
-                    {...register('bio')}
-                    style={{ paddingRight: '36px' }}
-                  />
+                  <Textarea rows={3} {...register('bio')} style={{ paddingRight: '36px' }} />
                   <div
                     style={{
                       position: 'absolute',
@@ -379,7 +370,7 @@ export default function ProfileTab() {
             <FeedPostCard key={post.id}>
               <FeedPostContent>
                 <FeedPostAvatar>
-                  {(avatarPreview || profile?.avatarUrl) ? (
+                  {avatarPreview || profile?.avatarUrl ? (
                     <img
                       src={avatarPreview || profile?.avatarUrl || ''}
                       alt="Avatar"
@@ -391,9 +382,7 @@ export default function ProfileTab() {
                       }}
                     />
                   ) : (
-                    <FeedPostAvatarText>
-                      {user?.displayName?.[0]?.toUpperCase()}
-                    </FeedPostAvatarText>
+                    <FeedPostAvatarText>{user?.displayName?.[0]?.toUpperCase()}</FeedPostAvatarText>
                   )}
                 </FeedPostAvatar>
 

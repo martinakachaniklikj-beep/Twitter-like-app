@@ -19,4 +19,3 @@ export interface TrendingTabProps {
    */
   onHashtagSelect?: (hashtag: string) => void;
 }
-

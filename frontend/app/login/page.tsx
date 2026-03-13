@@ -25,9 +25,7 @@ export default function LoginPage() {
         <BrandingSection>
           <BrandingText>
             <Heading>Happening now</Heading>
-            <SubHeading>
-              Sign in to see what&apos;s happening on your timeline.
-            </SubHeading>
+            <SubHeading>Sign in to see what&apos;s happening on your timeline.</SubHeading>
           </BrandingText>
         </BrandingSection>
 
@@ -38,4 +36,3 @@ export default function LoginPage() {
     </PageWrapper>
   );
 }
-

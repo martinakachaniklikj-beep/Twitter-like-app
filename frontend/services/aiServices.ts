@@ -2,13 +2,7 @@
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
 
-export type ModerationCategory =
-  | 'safe'
-  | 'harassment'
-  | 'hate'
-  | 'spam'
-  | 'sexual'
-  | 'violence';
+export type ModerationCategory = 'safe' | 'harassment' | 'hate' | 'spam' | 'sexual' | 'violence';
 
 export interface ModerationResult {
   safe: boolean;
@@ -141,10 +135,7 @@ export const aiServices = {
     }
   },
 
-  async getInspiration(
-    token: string,
-    kind: InspirationKind = 'quote',
-  ): Promise<InspirationResult> {
+  async getInspiration(token: string, kind: InspirationKind = 'quote'): Promise<InspirationResult> {
     try {
       const params = new URLSearchParams({ kind });
       const response = await fetch(`${apiUrl}/geminiAi/inspiration?${params.toString()}`, {
@@ -172,4 +163,3 @@ export const aiServices = {
     }
   },
 };
-

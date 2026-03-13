@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled from 'styled-components';
 
 export const HeaderRoot = styled.div`
   display: flex;
@@ -87,7 +87,9 @@ export const Dropdown = styled.div`
   border: 1px solid rgb(var(--border));
   background: var(--background);
   color: var(--foreground);
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
   padding: 0.75rem;
   z-index: 10;
   display: flex;
@@ -109,7 +111,7 @@ export const ThemeButtons = styled.div`
 
 export const ThemeButton = styled.button<{
   $active?: boolean;
-  $variant?: "standard" | "love" | "friends";
+  $variant?: 'standard' | 'love' | 'friends';
 }>`
   padding: 0.25rem 0.5rem;
   border-radius: 9999px;
@@ -117,31 +119,33 @@ export const ThemeButton = styled.button<{
   border: 1px solid rgb(var(--border));
   background: var(--background);
   color: var(--foreground);
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s;
 
   ${({ $active, $variant }) => {
-    if ($variant === "love") {
-      if ($active)
-        return "background: rgb(244 63 94); color: white; border-color: rgb(244 63 94);";
-      return "background: rgba(255, 228, 230, 0.8); color: rgb(190 18 60); border-color: rgb(254 205 211);";
+    if ($variant === 'love') {
+      if ($active) return 'background: rgb(244 63 94); color: white; border-color: rgb(244 63 94);';
+      return 'background: rgba(255, 228, 230, 0.8); color: rgb(190 18 60); border-color: rgb(254 205 211);';
     }
-    if ($variant === "friends") {
+    if ($variant === 'friends') {
       if ($active)
-        return "background: rgb(16 185 129); color: white; border-color: rgb(16 185 129);";
-      return "background: rgba(236 254 255, 0.8); color: rgb(4 120 87); border-color: rgb(153 246 228);";
+        return 'background: rgb(16 185 129); color: white; border-color: rgb(16 185 129);';
+      return 'background: rgba(236 254 255, 0.8); color: rgb(4 120 87); border-color: rgb(153 246 228);';
     }
     if ($active)
-      return "background: var(--primary); color: var(--primary-foreground); border-color: var(--primary);";
-    return "";
+      return 'background: var(--primary); color: var(--primary-foreground); border-color: var(--primary);';
+    return '';
   }}
 
   .dark & {
     ${({ $active, $variant }) => {
-      if ($variant === "love" && !$active)
-        return "background: rgba(127 29 29, 0.4); color: rgb(254 243 199); border-color: rgb(153 27 27);";
-      if ($variant === "friends" && !$active)
-        return "background: rgba(6 78 59, 0.4); color: rgb(167 243 208); border-color: rgb(19 78 74);";
-      return "";
+      if ($variant === 'love' && !$active)
+        return 'background: rgba(127 29 29, 0.4); color: rgb(254 243 199); border-color: rgb(153 27 27);';
+      if ($variant === 'friends' && !$active)
+        return 'background: rgba(6 78 59, 0.4); color: rgb(167 243 208); border-color: rgb(19 78 74);';
+      return '';
     }}
   }
 `;

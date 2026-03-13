@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled from 'styled-components';
 
 export const InputWrap = styled.div`
   flex: 1;
@@ -23,7 +23,9 @@ export const Textarea = styled.textarea`
   }
   &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+    box-shadow:
+      0 0 0 2px var(--background),
+      0 0 0 4px var(--ring);
   }
   &:disabled {
     cursor: not-allowed;
@@ -52,7 +54,8 @@ export const RecordingDot = styled.span`
   background: rgb(239 68 68);
   animation: pulse 1.5s ease-in-out infinite;
   @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
@@ -95,7 +98,10 @@ export const RemoveFileButton = styled.button`
   justify-content: center;
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   border: 1px solid rgb(var(--border));
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    border-color 0.15s;
   &:hover {
     background: var(--destructive);
     color: var(--destructive-foreground, white);
@@ -170,5 +176,5 @@ export const KittyPopoverButton = styled.button`
 `;
 
 export const MicIconWrapper = styled.span<{ $recording?: boolean }>`
-  color: ${({ $recording }) => ($recording ? "rgb(239 68 68)" : "inherit")};
+  color: ${({ $recording }) => ($recording ? 'rgb(239 68 68)' : 'inherit')};
 `;

@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled from 'styled-components';
 
 export const DialogBody = styled.div`
   display: flex;
@@ -134,7 +134,7 @@ export const ParticipantUsername = styled.div`
   white-space: nowrap;
 `;
 
-export const Checkbox = styled.input.attrs({ type: "checkbox" })`
+export const Checkbox = styled.input.attrs({ type: 'checkbox' })`
   height: 1rem;
   width: 1rem;
   border-radius: 0.25rem;

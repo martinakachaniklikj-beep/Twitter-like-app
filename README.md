@@ -154,6 +154,37 @@ npm run dev
 
 The frontend application will start on `http://localhost:3000`
 
+## Production readiness check
+
+Before deploying, run a full lint + production build from the **project root**:
+
+```bash
+# Lint both apps, then build backend + frontend (catches TypeScript and build errors)
+npm run check:prod
+```
+
+This runs `lint` then `build` (backend then frontend). If any step fails, fix the errors before deploying.
+
+**Optional: run the built app locally**
+
+1. Ensure `.env` (backend) and `.env.local` (frontend) are set with production-like values.
+2. From project root:
+   ```bash
+   npm run build
+   ```
+3. Start backend: `cd backend && npm run start:prod` (serves from `dist/`).
+4. In another terminal, start frontend: `cd frontend && npm run start` (serves from `.next/`).
+5. Open the app and smoke-test (login, feed, chat, etc.).
+
+**Root scripts**
+
+| Script | Description |
+|--------|-------------|
+| `npm run build` | Build backend + frontend for production |
+| `npm run lint` | Lint backend + frontend |
+| `npm run check:prod` | Lint + build (recommended pre-deploy check) |
+| `npm run test` | Run backend unit tests |
+
 ## Development
 
 ### Backend Commands

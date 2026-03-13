@@ -5,7 +5,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getToken } from 'firebase/messaging';
 import { useAuth } from '@/contexts/AuthContext';
 import { getMessagingSafely } from '@/lib/firebase';
-import { apiUrl, notificationServices, type ApiNotification } from '@/services/notificationServices';
+import {
+  apiUrl,
+  notificationServices,
+  type ApiNotification,
+} from '@/services/notificationServices';
 import { useChatSocket } from '@/contexts/ChatSocketContext';
 import { chatServices } from '@/services/chatServices';
 import { useRouter } from 'next/navigation';
@@ -86,34 +90,30 @@ export default function NotificationsTab({ searchQuery = '', onCompose }: Notifi
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
 
-  const filteredNotifications =
-    !normalizedQuery.length
-      ? notifications
-      : notifications.filter((n) => {
-          const message = n.message.toLowerCase();
-          const type = String(n.type).toLowerCase();
-          return message.includes(normalizedQuery) || type.includes(normalizedQuery);
-        });
+  const filteredNotifications = !normalizedQuery.length
+    ? notifications
+    : notifications.filter((n) => {
+        const message = n.message.toLowerCase();
+        const type = String(n.type).toLowerCase();
+        return message.includes(normalizedQuery) || type.includes(normalizedQuery);
+      });
 
   useEffect(() => {
     const unsubscribe = onNotificationNew((notification) => {
       // Update the currently active filter list
-      queryClient.setQueryData<ApiNotification[] | undefined>(
-        ['notifications', filter],
-        (prev) => {
-          const current = prev ?? [];
+      queryClient.setQueryData<ApiNotification[] | undefined>(['notifications', filter], (prev) => {
+        const current = prev ?? [];
 
-          if (current.some((n) => n.id === notification.id)) {
-            return current;
-          }
+        if (current.some((n) => n.id === notification.id)) {
+          return current;
+        }
 
-          if (filter !== 'all' && notification.type !== filter) {
-            return current;
-          }
+        if (filter !== 'all' && notification.type !== filter) {
+          return current;
+        }
 
-          return [notification, ...current].slice(0, 50);
-        },
-      );
+        return [notification, ...current].slice(0, 50);
+      });
 
       // Also make sure the badge source list stays up to date
       queryClient.setQueryData<ApiNotification[] | undefined>(
@@ -239,18 +239,12 @@ export default function NotificationsTab({ searchQuery = '', onCompose }: Notifi
 
               queryClient.setQueryData<ApiNotification[] | undefined>(
                 ['notifications', filter],
-                (prev) =>
-                  prev?.map((n) =>
-                    n.id === id ? { ...n, readAt: nowIso } : n,
-                  ) ?? prev,
+                (prev) => prev?.map((n) => (n.id === id ? { ...n, readAt: nowIso } : n)) ?? prev,
               );
 
               queryClient.setQueryData<ApiNotification[] | undefined>(
                 ['notifications', 'badge'],
-                (prev) =>
-                  prev?.map((n) =>
-                    n.id === id ? { ...n, readAt: nowIso } : n,
-                  ) ?? prev,
+                (prev) => prev?.map((n) => (n.id === id ? { ...n, readAt: nowIso } : n)) ?? prev,
               );
             } catch {
               // ignore failures – item will stay unread
@@ -274,7 +268,10 @@ export default function NotificationsTab({ searchQuery = '', onCompose }: Notifi
     };
   }, [user, filter, queryClient]);
 
-  const handleGroupInviteAction = async (notification: ApiNotification, action: 'accept' | 'deny') => {
+  const handleGroupInviteAction = async (
+    notification: ApiNotification,
+    action: 'accept' | 'deny',
+  ) => {
     const parsed = parseGroupInvite(notification);
     if (!parsed || !user) return;
     try {
@@ -338,9 +335,7 @@ export default function NotificationsTab({ searchQuery = '', onCompose }: Notifi
         {filteredNotifications.map((n) => {
           const invite = parseGroupInvite(n);
           const isBirthdayNotification =
-            n.type === 'system' &&
-            !invite &&
-            n.message.toLowerCase().includes('birthday');
+            n.type === 'system' && !invite && n.message.toLowerCase().includes('birthday');
 
           return (
             <li
@@ -396,7 +391,8 @@ export default function NotificationsTab({ searchQuery = '', onCompose }: Notifi
               {invite ? (
                 <>
                   <p className="text-sm text-foreground">
-                    {invite.actorName} invited you to join <span className="font-semibold">{invite.groupName}</span>.
+                    {invite.actorName} invited you to join{' '}
+                    <span className="font-semibold">{invite.groupName}</span>.
                   </p>
                   <div className="mt-2 flex gap-2">
                     <button
@@ -445,4 +441,3 @@ export default function NotificationsTab({ searchQuery = '', onCompose }: Notifi
     </div>
   );
 }
-

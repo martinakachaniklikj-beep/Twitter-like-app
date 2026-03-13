@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Delete, Param, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Param,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { FirebaseAuthGuard } from '../firebase/firebase-auth.guard';
 import { BlockService } from './block.service';
@@ -30,4 +38,3 @@ export class BlockController {
     return this.blockService.unblockUser(req.user.uid, userId);
   }
 }
-

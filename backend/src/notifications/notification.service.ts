@@ -10,7 +10,11 @@ export class NotificationsService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async sendPushNotification(token: string | null | undefined, title: string, body: string) {
+  async sendPushNotification(
+    token: string | null | undefined,
+    title: string,
+    body: string,
+  ) {
     if (!token) {
       return;
     }
@@ -24,7 +28,6 @@ export class NotificationsService {
         },
       });
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('Failed to send push notification', error);
     }
   }
@@ -33,7 +36,6 @@ export class NotificationsService {
     try {
       this.gateway.emitNotification(userId, payload);
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('Failed to broadcast in-app notification', error);
     }
   }
@@ -58,9 +60,9 @@ export class NotificationsService {
     });
 
     for (const birthdayUser of usersWithBirthdays) {
-      if (!(birthdayUser as any).birthDate) continue;
+      if (!birthdayUser.birthDate) continue;
 
-      const birthDate = new Date((birthdayUser as any).birthDate);
+      const birthDate = new Date(birthdayUser.birthDate);
       if (
         birthDate.getMonth() !== todayMonth ||
         birthDate.getDate() !== todayDate
@@ -106,7 +108,7 @@ export class NotificationsService {
         this.broadcastInAppNotification(notification.userId, notification);
 
         await this.sendPushNotification(
-          (target as any).fcmToken,
+          target.fcmToken,
           'Birthday',
           `Wish ${displayName} a happy birthday!`,
         );

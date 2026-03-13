@@ -37,4 +37,3 @@ export const followServices = {
     return res.json();
   },
 };
-

@@ -35,6 +35,11 @@ lerna-debug.log*
 *.pem
 Thumbs.db
 
+# Secrets and credentials (never commit)
+*-credentials.json
+serviceAccount*.json
+*.key.json
+
 # IDE
 .vscode/
 .idea/

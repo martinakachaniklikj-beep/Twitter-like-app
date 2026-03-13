@@ -7,4 +7,3 @@ export interface FollowersTabProps {
 }
 
 export type FollowersList = FollowUser[];
-

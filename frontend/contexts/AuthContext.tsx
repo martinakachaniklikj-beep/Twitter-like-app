@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -32,12 +27,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (
-    email: string,
-    password: string,
-    username: string,
-    birthDate: string,
-  ) => Promise<void>;
+  register: (email: string, password: string, username: string, birthDate: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -87,11 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const credential = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
+    const credential = await signInWithEmailAndPassword(auth, email, password);
 
     const token = await credential.user.getIdToken();
     localStorage.setItem('token', token);
@@ -99,20 +85,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await loadProfile(credential.user);
   };
 
-  const register = async (
-    email: string,
-    password: string,
-    username: string,
-    birthDate: string,
-  ) => {
-    const credential = await createUserWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-  
+  const register = async (email: string, password: string, username: string, birthDate: string) => {
+    const credential = await createUserWithEmailAndPassword(auth, email, password);
+
     const token = await credential.user.getIdToken();
-  
+
     await fetch(`/api/users/me`, {
       method: 'POST',
       headers: {
@@ -121,11 +98,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       body: JSON.stringify({ username, birthDate }),
     });
-  
+
     localStorage.setItem('token', token);
 
     await loadProfile(credential.user);
-  };  
+  };
 
   const logout = async () => {
     await signOut(auth);

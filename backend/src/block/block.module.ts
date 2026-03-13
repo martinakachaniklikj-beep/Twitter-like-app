@@ -9,4 +9,3 @@ import { BlockController } from './block.controller';
   exports: [BlockService],
 })
 export class BlockModule {}
-

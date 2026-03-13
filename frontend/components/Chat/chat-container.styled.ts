@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled from 'styled-components';
 
 export const Container = styled.div`
   position: relative;
@@ -120,7 +120,7 @@ export const ConversationItem = styled.button<{ $selected?: boolean; $hasUnread?
   border-bottom: 1px solid rgb(var(--border));
   transition: background-color 0.15s;
   background: ${({ $selected, $hasUnread }) =>
-    $selected ? "var(--muted)" : $hasUnread ? "rgba(251, 191, 36, 0.2)" : "transparent"};
+    $selected ? 'var(--muted)' : $hasUnread ? 'rgba(251, 191, 36, 0.2)' : 'transparent'};
   &:hover {
     background: color-mix(in srgb, var(--muted) 50%, transparent);
   }
@@ -181,7 +181,7 @@ export const ConversationItemPreview = styled.div<{ $hasUnread?: boolean }>`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: ${({ $hasUnread }) => ($hasUnread ? "var(--foreground)" : "var(--muted-foreground)")};
+  color: ${({ $hasUnread }) => ($hasUnread ? 'var(--foreground)' : 'var(--muted-foreground)')};
 `;
 
 export const UnreadDot = styled.div`
@@ -201,24 +201,24 @@ export const ChatArea = styled.div`
   min-height: 0;
 `;
 
-export const ThemeArea = styled.div<{ $theme: "standard" | "love" | "friends" }>`
+export const ThemeArea = styled.div<{ $theme: 'standard' | 'love' | 'friends' }>`
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
   background: ${({ $theme }) =>
-    $theme === "love"
-      ? "linear-gradient(to bottom right, rgba(255, 241, 242, 1), rgba(255, 228, 230, 1))"
-      : $theme === "friends"
-      ? "linear-gradient(to bottom right, rgba(240, 249, 255, 1), rgba(236, 254, 255, 1))"
-      : "var(--background)"};
+    $theme === 'love'
+      ? 'linear-gradient(to bottom right, rgba(255, 241, 242, 1), rgba(255, 228, 230, 1))'
+      : $theme === 'friends'
+        ? 'linear-gradient(to bottom right, rgba(240, 249, 255, 1), rgba(236, 254, 255, 1))'
+        : 'var(--background)'};
   .dark & {
     background: ${({ $theme }) =>
-      $theme === "love"
-        ? "linear-gradient(to bottom right, rgba(136, 19, 55, 0.4), rgba(76, 5, 25, 0.5))"
-        : $theme === "friends"
-        ? "linear-gradient(to bottom right, rgba(12, 74, 110, 0.3), rgba(6, 78, 59, 0.3))"
-        : "var(--background)"};
+      $theme === 'love'
+        ? 'linear-gradient(to bottom right, rgba(136, 19, 55, 0.4), rgba(76, 5, 25, 0.5))'
+        : $theme === 'friends'
+          ? 'linear-gradient(to bottom right, rgba(12, 74, 110, 0.3), rgba(6, 78, 59, 0.3))'
+          : 'var(--background)'};
   }
 `;
 
@@ -274,7 +274,8 @@ export const TypingDot = styled.span`
   background: var(--primary);
   animation: pulse 1.5s ease-in-out infinite;
   @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {

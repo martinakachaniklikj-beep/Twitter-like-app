@@ -8,4 +8,3 @@ import { SavedPostsController } from './saved-posts.controller';
   providers: [SavedPostsService, PrismaService],
 })
 export class SavedPostsModule {}
-

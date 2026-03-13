@@ -22,4 +22,3 @@ export function buildNextHistory(
 ): ExploreHistoryItem[] {
   return [user, ...previous.filter((u) => u.id !== user.id)].slice(0, maxEntries);
 }
-

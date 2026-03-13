@@ -1,5 +1,5 @@
-import { Controller, Get, Param } from '@nestjs/common'
-import { StocksService } from './stock.service'
+import { Controller, Get, Param } from '@nestjs/common';
+import { StocksService } from './stock.service';
 
 @Controller('stocks')
 export class StocksController {
@@ -7,11 +7,11 @@ export class StocksController {
 
   @Get(':symbol')
   getStock(@Param('symbol') symbol: string) {
-    return this.stocksService.getStock(symbol)
+    return this.stocksService.getStock(symbol);
   }
 
   @Get(':symbol/history')
   getStockHistory(@Param('symbol') symbol: string) {
-    return this.stocksService.getStockHistory(symbol)
+    return this.stocksService.getStockHistory(symbol);
   }
 }

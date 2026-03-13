@@ -1,4 +1,8 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notification.service';
 
@@ -16,12 +20,26 @@ export class ConversationService {
         conversation: {
           include: {
             participants: {
-              include: { user: { select: { id: true, username: true, displayName: true, avatarUrl: true } } },
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    username: true,
+                    displayName: true,
+                    avatarUrl: true,
+                  },
+                },
+              },
             },
             messages: {
               orderBy: { createdAt: 'desc' },
               take: 1,
-              select: { id: true, content: true, createdAt: true, senderId: true },
+              select: {
+                id: true,
+                content: true,
+                createdAt: true,
+                senderId: true,
+              },
             },
           },
         },
@@ -58,7 +76,9 @@ export class ConversationService {
 
     return participants.map((p) => {
       const conv = p.conversation;
-      const otherParticipants = conv.participants.filter((x) => x.userId !== userId);
+      const otherParticipants = conv.participants.filter(
+        (x) => x.userId !== userId,
+      );
       const lastMessage = conv.messages[0] ?? null;
 
       const lastReadAt = p.lastReadAt;
@@ -136,9 +156,7 @@ export class ConversationService {
         where: {
           conversationId: part.conversationId,
           senderId: { not: userId },
-          ...(part.lastReadAt
-            ? { createdAt: { gt: part.lastReadAt } }
-            : {}),
+          ...(part.lastReadAt ? { createdAt: { gt: part.lastReadAt } } : {}),
         },
       });
 
@@ -163,7 +181,16 @@ export class ConversationService {
         conversation: {
           include: {
             participants: {
-              include: { user: { select: { id: true, username: true, displayName: true, avatarUrl: true } } },
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    username: true,
+                    displayName: true,
+                    avatarUrl: true,
+                  },
+                },
+              },
             },
           },
         },
@@ -244,10 +271,12 @@ export class ConversationService {
       throw new ForbiddenException('Cannot create conversation with yourself');
     }
 
-    const myParticipations = await this.prisma.conversationParticipant.findMany({
-      where: { userId, conversation: { type: 'direct' } },
-      include: { conversation: true },
-    });
+    const myParticipations = await this.prisma.conversationParticipant.findMany(
+      {
+        where: { userId, conversation: { type: 'direct' } },
+        include: { conversation: true },
+      },
+    );
 
     for (const p of myParticipations) {
       const count = await this.prisma.conversationParticipant.count({
@@ -292,15 +321,21 @@ export class ConversationService {
       data: {
         type: 'direct',
         participants: {
-          create: [
-            { userId },
-            { userId: otherUserId },
-          ],
+          create: [{ userId }, { userId: otherUserId }],
         },
       },
       include: {
         participants: {
-          include: { user: { select: { id: true, username: true, displayName: true, avatarUrl: true } } },
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                displayName: true,
+                avatarUrl: true,
+              },
+            },
+          },
         },
       },
     });
@@ -357,7 +392,9 @@ export class ConversationService {
   }
 
   async createGroup(ownerId: string, memberUserIds: string[], name?: string) {
-    const uniqueMembers = Array.from(new Set(memberUserIds.filter((id) => id !== ownerId)));
+    const uniqueMembers = Array.from(
+      new Set(memberUserIds.filter((id) => id !== ownerId)),
+    );
 
     const users = await this.prisma.user.findMany({
       where: { id: { in: uniqueMembers } },
@@ -384,7 +421,9 @@ export class ConversationService {
     });
     const followerIds = new Set(follows.map((f) => f.followerId));
 
-    const directParticipants = validMemberIds.filter((id) => followerIds.has(id));
+    const directParticipants = validMemberIds.filter((id) =>
+      followerIds.has(id),
+    );
     const needsInvite = validMemberIds.filter((id) => !followerIds.has(id));
 
     if (directParticipants.length > 0) {
@@ -453,7 +492,16 @@ export class ConversationService {
       where: { id: conversation.id },
       include: {
         participants: {
-          include: { user: { select: { id: true, username: true, displayName: true, avatarUrl: true } } },
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                displayName: true,
+                avatarUrl: true,
+              },
+            },
+          },
         },
       },
     });
@@ -471,7 +519,11 @@ export class ConversationService {
     };
   }
 
-  async respondToGroupInvite(inviteId: string, userId: string, action: 'accept' | 'deny') {
+  async respondToGroupInvite(
+    inviteId: string,
+    userId: string,
+    action: 'accept' | 'deny',
+  ) {
     const invite = await (this.prisma as any).groupInvite.findUnique({
       where: { id: inviteId },
     });

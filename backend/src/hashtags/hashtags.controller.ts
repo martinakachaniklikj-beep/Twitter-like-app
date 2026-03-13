@@ -33,10 +33,7 @@ export class HashtagsController {
       ? 1
       : parseInt(daysWindow || '1', 10);
 
-    const normalizedScope =
-      scope === 'country'
-        ? 'country'
-        : 'global';
+    const normalizedScope = scope === 'country' ? 'country' : 'global';
 
     return this.hashtagsService.trending(
       limitNum,

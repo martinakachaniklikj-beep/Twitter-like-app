@@ -19,8 +19,12 @@ function isRetryableError(error: any): boolean {
 @Injectable()
 export class AiService {
   private genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  private primaryModel = this.genAI.getGenerativeModel({ model: PRIMARY_MODEL });
-  private fallbackModel = this.genAI.getGenerativeModel({ model: FALLBACK_MODEL });
+  private primaryModel = this.genAI.getGenerativeModel({
+    model: PRIMARY_MODEL,
+  });
+  private fallbackModel = this.genAI.getGenerativeModel({
+    model: FALLBACK_MODEL,
+  });
 
   private async generateContentWithFallback(
     content: string | object[],
@@ -93,7 +97,6 @@ Rules:
   }
 
   async moderateText(text: string) {
-
     const prompt = `
 You are a moderation AI for a social media platform.
 
@@ -162,7 +165,10 @@ Text:
       const text = await this.generateContentWithFallback(prompt);
       return JSON.parse(text);
     } catch (error) {
-      console.error('Gemini hashtag check failed, using fallback result', error);
+      console.error(
+        'Gemini hashtag check failed, using fallback result',
+        error,
+      );
       return {
         hasMismatches: false,
         mismatchedTags: [],
@@ -209,7 +215,9 @@ Do NOT mention that you are an AI or that you received an image; just describe i
     };
 
     try {
-      const text = (await this.generateContentWithFallback([imagePart, promptPart])).trim();
+      const text = (
+        await this.generateContentWithFallback([imagePart, promptPart])
+      ).trim();
       return { text };
     } catch (error) {
       console.error('Gemini describeImageFromBase64 failed', error);

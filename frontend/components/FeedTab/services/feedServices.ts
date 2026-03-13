@@ -7,10 +7,9 @@ export const feedServices = {
     limit: number = 10,
     type: 'for_you' | 'following' = 'for_you',
   ) {
-    const response = await fetch(
-      `${apiUrl}/posts/feed?page=${page}&limit=${limit}&type=${type}`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
+    const response = await fetch(`${apiUrl}/posts/feed?page=${page}&limit=${limit}&type=${type}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     if (!response.ok) throw new Error('Failed to load feed');
     return response.json();
   },

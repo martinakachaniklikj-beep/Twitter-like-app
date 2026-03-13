@@ -1,4 +1,9 @@
-import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notification.service';
 
@@ -43,7 +48,9 @@ export class MessageService {
     }
 
     if (conversation.type === 'direct') {
-      const other = conversation.participants.find((p) => p.userId !== senderId);
+      const other = conversation.participants.find(
+        (p) => p.userId !== senderId,
+      );
       if (other) {
         const block = await (this.prisma as any).block.findFirst({
           where: {
@@ -80,7 +87,7 @@ export class MessageService {
     let attachments: Array<{ size?: number }> = [];
 
     try {
-      const parsed = JSON.parse(trimmedContent) as any;
+      const parsed = JSON.parse(trimmedContent);
       if (parsed && typeof parsed === 'object') {
         if (typeof parsed.text === 'string') {
           text = parsed.text;
@@ -113,18 +120,20 @@ export class MessageService {
 
     if (sizes.some((s) => s > this.MAX_ATTACHMENT_SIZE_BYTES)) {
       throw new BadRequestException(
-        `Attachments must be smaller than ${(this.MAX_ATTACHMENT_SIZE_BYTES / (1024 * 1024)).toFixed(
-          0,
-        )} MB each.`,
+        `Attachments must be smaller than ${(
+          this.MAX_ATTACHMENT_SIZE_BYTES /
+          (1024 * 1024)
+        ).toFixed(0)} MB each.`,
       );
     }
 
     const totalSize = sizes.reduce((sum, s) => sum + s, 0);
     if (totalSize > this.MAX_TOTAL_ATTACHMENTS_SIZE_BYTES) {
       throw new BadRequestException(
-        `Attachments are too large in total (max ${(this.MAX_TOTAL_ATTACHMENTS_SIZE_BYTES / (1024 * 1024)).toFixed(
-          0,
-        )} MB per message).`,
+        `Attachments are too large in total (max ${(
+          this.MAX_TOTAL_ATTACHMENTS_SIZE_BYTES /
+          (1024 * 1024)
+        ).toFixed(0)} MB per message).`,
       );
     }
 
@@ -135,7 +144,14 @@ export class MessageService {
         content: trimmedContent,
       },
       include: {
-        sender: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+        sender: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
 
@@ -163,7 +179,10 @@ export class MessageService {
         });
 
         const recipients = participants.filter(
-          (p) => !blocks.some((b: any) => b.blockerId === p.userId && b.blockedId === senderId),
+          (p) =>
+            !blocks.some(
+              (b: any) => b.blockerId === p.userId && b.blockedId === senderId,
+            ),
         );
 
         if (recipients.length === 0) {
@@ -250,7 +269,9 @@ export class MessageService {
     }
 
     const cursor = before
-      ? await this.prisma.message.findUnique({ where: { id: before, conversationId } })
+      ? await this.prisma.message.findUnique({
+          where: { id: before, conversationId },
+        })
       : null;
 
     const messages = await this.prisma.message.findMany({
@@ -259,18 +280,27 @@ export class MessageService {
       ...(cursor ? { cursor: { id: before! }, skip: 1 } : {}),
       orderBy: { createdAt: 'desc' },
       include: {
-        sender: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+        sender: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
 
-    return messages.map((m) => ({
-      id: m.id,
-      conversationId: m.conversationId,
-      senderId: m.senderId,
-      content: m.content,
-      status: m.status,
-      createdAt: m.createdAt,
-      sender: m.sender,
-    })).reverse();
+    return messages
+      .map((m) => ({
+        id: m.id,
+        conversationId: m.conversationId,
+        senderId: m.senderId,
+        content: m.content,
+        status: m.status,
+        createdAt: m.createdAt,
+        sender: m.sender,
+      }))
+      .reverse();
   }
 }

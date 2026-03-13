@@ -8,4 +8,3 @@ import { SearchHistoryController } from './search-history.controller';
   providers: [SearchHistoryService, PrismaService],
 })
 export class SearchHistoryModule {}
-

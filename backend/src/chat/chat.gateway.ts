@@ -18,7 +18,9 @@ const CONVERSATION_ROOM_PREFIX = 'conversation:';
   cors: { origin: '*' },
   path: '/socket.io',
 })
-export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+export class ChatGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server!: Server;
 
@@ -36,8 +38,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   async handleConnection(client: Socket) {
     const token =
-      client.handshake?.auth?.token ??
-      client.handshake?.query?.token;
+      client.handshake?.auth?.token ?? client.handshake?.query?.token;
 
     if (!token) {
       this.logger.warn(`Socket ${client.id} connected without token`);
@@ -63,11 +64,18 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   }
 
   private getUserId(client: Socket): string | null {
-    return this.socketToUserId.get(client.id) ?? (client as Socket & { userId?: string }).userId ?? null;
+    return (
+      this.socketToUserId.get(client.id) ??
+      (client as Socket & { userId?: string }).userId ??
+      null
+    );
   }
 
   @SubscribeMessage('conversation:join')
-  async handleConversationJoin(client: Socket, payload: { conversationId: string }) {
+  async handleConversationJoin(
+    client: Socket,
+    payload: { conversationId: string },
+  ) {
     const userId = this.getUserId(client);
     if (!userId) return;
 
@@ -100,7 +108,10 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   }
 
   @SubscribeMessage('message:send')
-  async handleMessageSend(client: Socket, payload: { conversationId: string; content: string }) {
+  async handleMessageSend(
+    client: Socket,
+    payload: { conversationId: string; content: string },
+  ) {
     const userId = this.getUserId(client);
     if (!userId) return { error: 'Unauthorized' };
 
@@ -110,13 +121,19 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     }
 
     try {
-      const message = await this.messageService.create(conversationId, userId, content.trim());
+      const message = await this.messageService.create(
+        conversationId,
+        userId,
+        content.trim(),
+      );
       const room = `${CONVERSATION_ROOM_PREFIX}${conversationId}`;
       this.server.to(room).emit('message:new', message);
       return { ok: true, message };
     } catch (err) {
       this.logger.warn(`message:send failed: ${err}`);
-      return { error: err instanceof Error ? err.message : 'Failed to send message' };
+      return {
+        error: err instanceof Error ? err.message : 'Failed to send message',
+      };
     }
   }
 }

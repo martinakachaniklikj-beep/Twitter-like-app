@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Param, UseGuards, Req, Body, Patch, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  UseGuards,
+  Req,
+  Body,
+  Patch,
+  Delete,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { SavedPostsService } from './saved-posts.service';
 import { FirebaseAuthGuard } from '../firebase/firebase-auth.guard';
@@ -18,7 +28,11 @@ export class SavedPostsController {
     @Param('postId') postId: string,
     @Body('collectionName') collectionName?: string,
   ) {
-    return this.savedPostsService.toggleSavedPost(req.user.uid, postId, collectionName);
+    return this.savedPostsService.toggleSavedPost(
+      req.user.uid,
+      postId,
+      collectionName,
+    );
   }
 
   @Get('me')
@@ -45,4 +59,3 @@ export class SavedPostsController {
     return this.savedPostsService.deleteCollection(req.user.uid, id);
   }
 }
-

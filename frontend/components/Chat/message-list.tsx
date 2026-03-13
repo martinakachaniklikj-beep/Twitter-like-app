@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useRef } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Message, MessageListProps } from "./types";
-import { MessageBubble } from "./message-bubble";
+import { useEffect, useMemo, useRef } from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import type { Message, MessageListProps } from './types';
+import { MessageBubble } from './message-bubble';
 import {
   ScrollAreaWrap,
   LoadingState,
   LoadingMore,
   MessagesInner,
   SystemMessage,
-} from "./message-list.styled";
+} from './message-list.styled';
 
 export function MessageList({
   messages,
@@ -33,16 +33,12 @@ export function MessageList({
 
   useEffect(() => {
     if (!loading && bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
   }, [uniqueMessages.length, loading]);
 
   if (loading) {
-    return (
-      <LoadingState>
-        Loading messages...
-      </LoadingState>
-    );
+    return <LoadingState>Loading messages...</LoadingState>;
   }
 
   return (
@@ -53,34 +49,28 @@ export function MessageList({
         onWheelCapture={onUserInteraction}
         onTouchMove={onUserInteraction}
       >
-      {loadingMore && (
-        <LoadingMore>Loading older messages...</LoadingMore>
-      )}
-      <MessagesInner>
-        {uniqueMessages.map((msg) => {
-          if (msg.text.startsWith("SYSTEM:USER_JOINED|")) {
-            const name = msg.text.split("|")[1] || "Someone";
+        {loadingMore && <LoadingMore>Loading older messages...</LoadingMore>}
+        <MessagesInner>
+          {uniqueMessages.map((msg) => {
+            if (msg.text.startsWith('SYSTEM:USER_JOINED|')) {
+              const name = msg.text.split('|')[1] || 'Someone';
+              return <SystemMessage key={msg.id}>{name} joined the chat</SystemMessage>;
+            }
             return (
-              <SystemMessage key={msg.id}>
-                {name} joined the chat
-              </SystemMessage>
+              <MessageBubble
+                key={msg.id}
+                message={msg.text}
+                attachments={msg.attachments}
+                createdAt={msg.createdAt}
+                status={msg.status}
+                isOwn={currentUserId ? msg.senderId === currentUserId : undefined}
+                avatar={otherAvatarUrl}
+                theme={theme}
+              />
             );
-          }
-          return (
-            <MessageBubble
-              key={msg.id}
-              message={msg.text}
-              attachments={msg.attachments}
-              createdAt={msg.createdAt}
-              status={msg.status}
-              isOwn={currentUserId ? msg.senderId === currentUserId : undefined}
-              avatar={otherAvatarUrl}
-              theme={theme}
-            />
-          );
-        })}
-        <div ref={bottomRef} />
-      </MessagesInner>
+          })}
+          <div ref={bottomRef} />
+        </MessagesInner>
       </ScrollArea>
     </ScrollAreaWrap>
   );

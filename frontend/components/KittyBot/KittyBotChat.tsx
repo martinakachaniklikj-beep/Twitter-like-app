@@ -1,29 +1,29 @@
-"use client";
+'use client';
 
-import { SyntheticEvent, useState } from "react";
-import { Cat } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import type { KittyBotChatProps, KittyMessage } from "./types";
-import { KITTY_INTRO_TEXT } from "./constants";
+import { SyntheticEvent, useState } from 'react';
+import { Cat } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import type { KittyBotChatProps, KittyMessage } from './types';
+import { KITTY_INTRO_TEXT } from './constants';
 
-export function KittyBotChat({ variant = "compact" }: KittyBotChatProps) {
+export function KittyBotChat({ variant = 'compact' }: KittyBotChatProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<KittyMessage[]>(() =>
-    variant === "full"
+    variant === 'full'
       ? []
       : [
           {
-            id: "welcome",
-            role: "assistant",
+            id: 'welcome',
+            role: 'assistant',
             text: KITTY_INTRO_TEXT,
           },
-        ]
+        ],
   );
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isFullLayout = variant === "full";
+  const isFullLayout = variant === 'full';
   const hasMessages = messages.length > 0;
 
   const handleSend = async (e: SyntheticEvent) => {
@@ -32,7 +32,7 @@ export function KittyBotChat({ variant = "compact" }: KittyBotChatProps) {
     if (!trimmed || sending) return;
 
     if (!user) {
-      setError("You need to be logged in to chat with Kitty Bot.");
+      setError('You need to be logged in to chat with Kitty Bot.');
       return;
     }
 
@@ -44,7 +44,7 @@ export function KittyBotChat({ variant = "compact" }: KittyBotChatProps) {
 
       const userMessage: KittyMessage = {
         id: `user-${Date.now()}`,
-        role: "user",
+        role: 'user',
         text: trimmed,
       };
 
@@ -52,19 +52,17 @@ export function KittyBotChat({ variant = "compact" }: KittyBotChatProps) {
 
       const conversationText = [baseIntroLine, ...messages, userMessage]
         .map((m) =>
-          typeof m === "string"
-            ? m
-            : `${m.role === "assistant" ? "Kitty Bot" : "User"}: ${m.text}`
+          typeof m === 'string' ? m : `${m.role === 'assistant' ? 'Kitty Bot' : 'User'}: ${m.text}`,
         )
-        .join("\n");
+        .join('\n');
 
       setMessages((prev) => [...prev, userMessage]);
-      setInput("");
+      setInput('');
 
-      const res = await fetch("/api/geminiAi/chat", {
-        method: "POST",
+      const res = await fetch('/api/geminiAi/chat', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ message: conversationText }),
@@ -75,18 +73,20 @@ export function KittyBotChat({ variant = "compact" }: KittyBotChatProps) {
       }
 
       const data = (await res.json()) as { reply?: string };
-      const replyText = (data.reply ?? "").trim() || "Hmm, my whiskers are confused right now. Try asking in a different way?";
+      const replyText =
+        (data.reply ?? '').trim() ||
+        'Hmm, my whiskers are confused right now. Try asking in a different way?';
 
       const botMessage: KittyMessage = {
         id: `assistant-${Date.now()}`,
-        role: "assistant",
+        role: 'assistant',
         text: replyText,
       };
 
       setMessages((prev) => [...prev, botMessage]);
     } catch (err) {
-      console.error("Kitty Bot chat failed", err);
-      setError("Kitty Bot is taking a cat nap. Please try again in a moment.");
+      console.error('Kitty Bot chat failed', err);
+      setError('Kitty Bot is taking a cat nap. Please try again in a moment.');
     } finally {
       setSending(false);
     }
@@ -115,13 +115,13 @@ export function KittyBotChat({ variant = "compact" }: KittyBotChatProps) {
               {messages.map((m) => (
                 <div
                   key={m.id}
-                  className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
                     className={`px-3 py-2 rounded-2xl max-w-[80%] whitespace-pre-wrap text-sm ${
-                      m.role === "user"
-                        ? "bg-primary text-primary-foreground rounded-br-sm"
-                        : "bg-muted text-foreground rounded-bl-sm"
+                      m.role === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-br-sm'
+                        : 'bg-muted text-foreground rounded-bl-sm'
                     }`}
                   >
                     {m.text}
@@ -143,9 +143,7 @@ export function KittyBotChat({ variant = "compact" }: KittyBotChatProps) {
           </div>
         )}
 
-        {error && (
-          <div className="px-4 pb-2 text-xs text-red-500 font-medium">{error}</div>
-        )}
+        {error && <div className="px-4 pb-2 text-xs text-red-500 font-medium">{error}</div>}
 
         <form
           onSubmit={handleSend}
@@ -165,7 +163,7 @@ export function KittyBotChat({ variant = "compact" }: KittyBotChatProps) {
               disabled={sending || !input.trim()}
               className="text-xs font-medium px-4 py-1.5 rounded-full bg-primary text-primary-foreground disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {sending ? "Meowing..." : "Send"}
+              {sending ? 'Meowing...' : 'Send'}
             </button>
           </div>
         </form>
@@ -186,15 +184,12 @@ export function KittyBotChat({ variant = "compact" }: KittyBotChatProps) {
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-white max-h-72">
         {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-          >
+          <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
               className={`px-3 py-2 rounded-2xl max-w-[80%] whitespace-pre-wrap font-semibold ${
-                m.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-br-sm"
-                  : "bg-muted text-foreground rounded-bl-sm"
+                m.role === 'user'
+                  ? 'bg-primary text-primary-foreground rounded-br-sm'
+                  : 'bg-muted text-foreground rounded-bl-sm'
               }`}
             >
               {m.text}
@@ -226,10 +221,9 @@ export function KittyBotChat({ variant = "compact" }: KittyBotChatProps) {
           disabled={sending || !input.trim()}
           className="text-xs font-medium px-3 py-1.5 rounded-full bg-primary text-primary-foreground disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {sending ? "Meowing..." : "Send"}
+          {sending ? 'Meowing...' : 'Send'}
         </button>
       </form>
     </div>
   );
 }
-

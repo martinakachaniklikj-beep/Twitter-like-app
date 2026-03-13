@@ -35,4 +35,3 @@ export function filterFollowersByQuery(list: FollowersList, rawQuery: string): F
     );
   });
 }
-

@@ -6,4 +6,3 @@ export interface NotificationsTabProps {
   searchQuery?: string;
   onCompose?: (prefill: string) => void;
 }
-
