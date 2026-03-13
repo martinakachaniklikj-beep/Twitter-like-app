@@ -1,4 +1,5 @@
-import { UserProfile, UpdateProfilePayload, Post } from '../types';
+import { UserProfile, UpdateProfilePayload } from '../types';
+import type { Post } from '@/components/FeedTab/types';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
 

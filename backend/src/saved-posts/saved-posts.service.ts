@@ -130,9 +130,32 @@ export class SavedPostsService {
       },
     });
 
-    return saved.map((item) => ({
-      ...this.formatPost(item.post, userId),
-      collectionName: item.collection?.name ?? null,
+    // Group by post id so each post appears once, with all its collections
+    const byPostId = new Map<
+      string,
+      { post: any; collectionNames: string[]; inUnsorted: boolean }
+    >();
+    for (const item of saved) {
+      const existing = byPostId.get(item.postId);
+      const collectionName = item.collection?.name ?? null;
+      const inUnsorted = !collectionName;
+      if (existing) {
+        if (collectionName) existing.collectionNames.push(collectionName);
+        existing.inUnsorted = existing.inUnsorted || inUnsorted;
+      } else {
+        byPostId.set(item.postId, {
+          post: item.post,
+          collectionNames: collectionName ? [collectionName] : [],
+          inUnsorted,
+        });
+      }
+    }
+
+    return Array.from(byPostId.values()).map(({ post, collectionNames, inUnsorted }) => ({
+      ...this.formatPost(post, userId),
+      collectionName: collectionNames[0] ?? null,
+      collectionNames,
+      inUnsorted,
     }));
   }
 

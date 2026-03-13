@@ -244,7 +244,15 @@ Respond as Kitty Bot to the user's latest message only.`;
     try {
       return await this.generateContentWithFallback(prompt);
     } catch (error: any) {
-      console.error('Kitty Bot Gemini chat failed', error);
+      const msg = error?.message ?? String(error);
+      const status = error?.status ?? error?.statusCode;
+      console.error('Kitty Bot Gemini chat failed', {
+        message: msg,
+        status,
+        statusText: error?.statusText,
+        cause: error?.cause?.message ?? error?.cause,
+        stack: error?.stack,
+      });
 
       const serialized = JSON.stringify(error ?? {});
       const isQuotaError =
@@ -258,6 +266,22 @@ Respond as Kitty Bot to the user's latest message only.`;
 
       if (isQuotaError) {
         return 'Kitty Bot has reached the daily AI limit and needs a short nap. Please try again later.';
+      }
+
+      // API key missing or invalid (e.g. on Railway if GEMINI_API_KEY not set)
+      const isAuthError =
+        typeof msg === 'string' &&
+        (msg.includes('API key') || msg.includes('invalid') || msg.includes('401') || msg.includes('403'));
+      if (isAuthError) {
+        return 'Kitty Bot is not configured right now. Please try again later or contact support.';
+      }
+
+      // Content blocked or policy error – give a clearer hint
+      const isBlocked =
+        typeof msg === 'string' &&
+        (msg.includes('blocked') || msg.includes('Safety') || msg.includes('policy') || msg.includes('content'));
+      if (isBlocked) {
+        return "Kitty Bot couldn't reply to that (content policy). Try rephrasing or a different question.";
       }
 
       return 'Kitty Bot ran into an error while thinking. Please try again in a moment.';

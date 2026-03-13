@@ -343,7 +343,7 @@ function HomePageContent() {
             )}
             <MainScroll>
               <TabContentShell
-                $fullWidth={activeTab === 'messages'}
+                $fullWidth={activeTab === 'messages' || activeTab === 'bookmarks'}
                 $compactLeft={activeTab === 'bookmarks'}
               >
                 {activeTab === 'feed' && (

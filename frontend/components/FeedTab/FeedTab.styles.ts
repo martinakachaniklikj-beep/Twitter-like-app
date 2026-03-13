@@ -161,16 +161,6 @@ export const PostCard = styled.div`
   border: 1px solid rgb(var(--border));
   border-radius: 0.85rem;
   padding: 0.9rem 1rem;
-  transition:
-    background-color 0.3s,
-    box-shadow 0.3s,
-    transform 0.15s;
-
-  &:hover {
-    background: rgba(var(--accent), 0.12);
-    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.18);
-    transform: translateY(-1px);
-  }
 `;
 
 export const PostContent = styled.div`
@@ -330,11 +320,12 @@ export const ModalCloseButton = styled.button`
 `;
 
 export const OriginalPostCard = styled.div`
-  margin-bottom: 1rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
   padding: 1rem;
-  background: rgba(var(--repost), 0.16);
   border-radius: 0.5rem;
-  border: 1px solid rgba(var(--repost), 0.4);
+  border: 2px solid rgb(var(--repost));
+  background: rgba(120, 120, 120, 0.06);
 `;
 
 export const OriginalPostHeader = styled.div`

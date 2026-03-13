@@ -36,6 +36,8 @@ export interface Post {
     currentUserVoteOptionId?: string;
   } | null;
   collectionName?: string | null;
+  collectionNames?: string[];
+  inUnsorted?: boolean;
   hashtags?: string[];
   poll?: {
     id: string;

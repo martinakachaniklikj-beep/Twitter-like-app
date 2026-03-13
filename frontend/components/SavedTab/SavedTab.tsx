@@ -4,23 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  Container,
-  FeedContainer,
   FeedSection,
   EmptyCard,
   EmptyText,
   EmptySubtext,
-  PostCard,
-  PostContent,
-  PostAvatar,
-  PostAvatarText,
-  PostBody,
-  PostHeader,
-  PostAuthorName,
-  PostAuthorUsername,
-  PostDivider,
-  PostDate,
-  PostText,
   PostButton,
   ModalOverlay,
   ModalContent,
@@ -28,11 +15,46 @@ import {
   ModalTitle,
   ModalCloseButton,
 } from '@/components/FeedTab/FeedTab.styles';
+import {
+  SavedTabContainer,
+  SavedTabLayout,
+  Sidebar,
+  SidebarToggleButton,
+  CollectionsLabel,
+  CollectionsList,
+  CollectionFilterButton,
+  CollectionItemButton,
+  CollectionCover,
+  CollectionCoverImage,
+  CollectionCoverLetter,
+  CollectionItemContent,
+  CollectionItemName,
+  ManageCollectionTrigger,
+  SavedTabFeedWrapper,
+  SavedPostsGrid,
+  SavedPostCard,
+  SavedPostMediaWrapper,
+  SavedPostMedia,
+  SavedPostCardFooter,
+  SavedPostAvatar,
+  SavedPostAvatarImage,
+  SavedPostAvatarLetter,
+  SavedPostCardText,
+  SavedPostAuthorName,
+  SavedPostContentPreview,
+  ModalFormSection,
+  ModalFieldGroup,
+  ModalLabel,
+  ModalInput,
+  DeleteCollectionButton,
+  ModalActionsRow,
+  ModalCancelButton,
+} from './SavedTab.styles';
 import type { Post } from '@/components/FeedTab/types';
 import type { SavedCollection, SavedTabProps } from './types';
 import { formatDate } from '@/components/FeedTab/utils/utils';
 import { feedServices } from '@/components/FeedTab/services/feedServices';
-import { Bookmark, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function SavedTab({ searchQuery = '' }: SavedTabProps) {
   const { user } = useAuth();
@@ -112,9 +134,16 @@ export default function SavedTab({ searchQuery = '' }: SavedTabProps) {
       );
 
       setSavedPosts((prev) =>
-        prev.map((p) =>
-          p.collectionName === collectionToManage.name ? { ...p, collectionName: updated.name } : p,
-        ),
+        prev.map((p) => {
+          const names = p.collectionNames ?? [];
+          if (!names.includes(collectionToManage.name)) return p;
+          const next = names.map((n) => (n === collectionToManage.name ? updated.name : n));
+          return {
+            ...p,
+            collectionName: p.collectionName === collectionToManage.name ? updated.name : p.collectionName,
+            collectionNames: next,
+          };
+        }),
       );
     } catch (error) {
       console.error('Failed to rename collection', error);
@@ -139,9 +168,17 @@ export default function SavedTab({ searchQuery = '' }: SavedTabProps) {
       setCollections((prev) => prev.filter((c) => c.id !== collectionToManage.id));
 
       setSavedPosts((prev) =>
-        prev.map((p) =>
-          p.collectionName === collectionToManage.name ? { ...p, collectionName: null } : p,
-        ),
+        prev.map((p) => {
+          const names = p.collectionNames ?? [];
+          if (!names.includes(collectionToManage.name)) return p;
+          const next = names.filter((n) => n !== collectionToManage.name);
+          return {
+            ...p,
+            collectionName: next[0] ?? null,
+            collectionNames: next,
+            inUnsorted: next.length === 0 ? true : p.inUnsorted,
+          };
+        }),
       );
 
       if (activeCollectionFilter === collectionToManage.name) {
@@ -161,105 +198,45 @@ export default function SavedTab({ searchQuery = '' }: SavedTabProps) {
     activeCollectionFilter === 'all'
       ? savedPosts
       : activeCollectionFilter === 'none'
-        ? savedPosts.filter((p) => !p.collectionName)
-        : savedPosts.filter((p) => p.collectionName === activeCollectionFilter);
+        ? savedPosts.filter((p) => p.inUnsorted && (p.collectionNames?.length ?? 0) === 0)
+        : savedPosts.filter((p) => p.collectionNames?.includes(activeCollectionFilter));
 
   const searchFilteredPosts = !normalizedQuery.length
     ? filteredPosts
     : filteredPosts.filter((p) => {
         const content = (p.isRepost ? p.originalPostContent : p.content) || '';
         const author = (p.authorDisplayName || p.authorUsername || '').toString().toLowerCase();
-        const collectionName = (p.collectionName || '').toString().toLowerCase();
-        const haystack = `${content} ${author} ${collectionName}`.toLowerCase();
+        const collectionNamesStr = (p.collectionNames ?? []).join(' ').toLowerCase();
+        const haystack = `${content} ${author} ${collectionNamesStr}`.toLowerCase();
         return haystack.includes(normalizedQuery);
       });
 
   const hasPosts = searchFilteredPosts.length > 0;
 
   return (
-    <Container>
-      <div
-        style={{
-          display: 'flex',
-          height: '100%',
-        }}
-      >
-        <div
-          style={{
-            width: isSidebarOpen ? '28%' : 40,
-            maxWidth: isSidebarOpen ? 260 : 40,
-            minWidth: isSidebarOpen ? 120 : 40,
-            borderRight: '1px solid rgb(var(--border))',
-            padding: '8px 4px 8px 0',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            transition: 'width 0.2s ease',
-            overflow: 'hidden',
-          }}
-        >
-          <button
+    <SavedTabContainer>
+      <SavedTabLayout>
+        <Sidebar $isOpen={isSidebarOpen}>
+          <SidebarToggleButton
             type="button"
+            $isOpen={isSidebarOpen}
             onClick={() => setIsSidebarOpen((prev) => !prev)}
-            style={{
-              alignSelf: isSidebarOpen ? 'flex-end' : 'center',
-              width: 28,
-              height: 28,
-              borderRadius: '999px',
-              border: '1px solid rgb(var(--border))',
-              background: 'rgb(var(--background))',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
             title={isSidebarOpen ? 'Collapse collections' : 'Expand collections'}
           >
             {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-          </button>
+          </SidebarToggleButton>
 
           {isSidebarOpen && (
             <>
-              <span
-                style={{
-                  fontWeight: 600,
-                  fontSize: '0.8rem',
-                  padding: '0 2px',
-                }}
-              >
-                Collections
-              </span>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '6px',
-                  overflowY: 'auto',
-                  paddingRight: '4px',
-                  maxHeight: '100%',
-                }}
-              >
-                <button
+              <CollectionsLabel>Collections</CollectionsLabel>
+              <CollectionsList>
+                <CollectionFilterButton
                   type="button"
+                  $active={activeCollectionFilter === 'all'}
                   onClick={() => setActiveCollectionFilter('all')}
-                  style={{
-                    padding: '4px 8px',
-                    borderRadius: '999px',
-                    border:
-                      activeCollectionFilter === 'all'
-                        ? '2px solid var(--primary-color, #1d9bf0)'
-                        : '1px solid rgb(var(--border))',
-                    background:
-                      activeCollectionFilter === 'all'
-                        ? 'rgba(29, 155, 240, 0.08)'
-                        : 'rgb(var(--background))',
-                    cursor: 'pointer',
-                    fontSize: '0.75rem',
-                    textAlign: 'left',
-                  }}
                 >
                   All saved
-                </button>
+                </CollectionFilterButton>
 
                 {collections.map((collection) => {
                   const cover = collection.coverPost ?? null;
@@ -267,87 +244,27 @@ export default function SavedTab({ searchQuery = '' }: SavedTabProps) {
                     (cover?.isRepost ? cover.originalPostGifUrl : cover?.gifUrl) ||
                     (cover?.isRepost ? cover.originalPostImageUrl : cover?.imageUrl) ||
                     cover?.avatarUrl;
-
                   const isActive = activeCollectionFilter === collection.name;
 
                   return (
-                    <button
+                    <CollectionItemButton
                       key={collection.id}
                       type="button"
+                      $active={isActive}
                       onClick={() => setActiveCollectionFilter(collection.name)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '4px 6px',
-                        borderRadius: '12px',
-                        border: isActive
-                          ? '2px solid var(--primary-color, #1d9bf0)'
-                          : '1px solid rgb(var(--border))',
-                        background: isActive
-                          ? 'rgba(29, 155, 240, 0.08)'
-                          : 'rgb(var(--background))',
-                        cursor: 'pointer',
-                      }}
                     >
-                      <div
-                        style={{
-                          position: 'relative',
-                          width: 32,
-                          height: 32,
-                          borderRadius: '10px',
-                          overflow: 'hidden',
-                          background: 'linear-gradient(135deg, #1d9bf0, #794bc4)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                        }}
-                      >
+                      <CollectionCover>
                         {imageSrc ? (
-                          <img
-                            src={imageSrc}
-                            alt={collection.name}
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
-                            }}
-                          />
+                          <CollectionCoverImage src={imageSrc} alt={collection.name} />
                         ) : (
-                          <span
-                            style={{
-                              fontSize: '1rem',
-                              color: 'white',
-                              fontWeight: 700,
-                            }}
-                          >
+                          <CollectionCoverLetter>
                             {collection.name[0]?.toUpperCase() ?? '#'}
-                          </span>
+                          </CollectionCoverLetter>
                         )}
-                      </div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'flex-start',
-                          minWidth: 0,
-                          flex: 1,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: '0.75rem',
-                            fontWeight: 500,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            width: '100%',
-                          }}
-                        >
-                          {collection.name}
-                        </span>
-                        <div
+                      </CollectionCover>
+                      <CollectionItemContent>
+                        <CollectionItemName>{collection.name}</CollectionItemName>
+                        <ManageCollectionTrigger
                           role="button"
                           tabIndex={0}
                           onClick={(e) => {
@@ -361,30 +278,20 @@ export default function SavedTab({ searchQuery = '' }: SavedTabProps) {
                               handleOpenManageCollection(collection);
                             }
                           }}
-                          style={{
-                            marginTop: 2,
-                            border: 'none',
-                            background: 'transparent',
-                            padding: 0,
-                            cursor: 'pointer',
-                            color: 'rgb(var(--muted-foreground))',
-                            display: 'flex',
-                            alignItems: 'center',
-                          }}
                           title="Manage collection"
                         >
                           <MoreHorizontal size={14} />
-                        </div>
-                      </div>
-                    </button>
+                        </ManageCollectionTrigger>
+                      </CollectionItemContent>
+                    </CollectionItemButton>
                   );
                 })}
-              </div>
+              </CollectionsList>
             </>
           )}
-        </div>
+        </Sidebar>
 
-        <FeedContainer style={{ flex: 1 }}>
+        <SavedTabFeedWrapper>
           <FeedSection>
             {!hasPosts ? (
               <EmptyCard>
@@ -394,15 +301,7 @@ export default function SavedTab({ searchQuery = '' }: SavedTabProps) {
                 </EmptySubtext>
               </EmptyCard>
             ) : (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-                  gap: '12px',
-                  padding: '8px 4px',
-                  alignItems: 'start',
-                }}
-              >
+              <SavedPostsGrid>
                 {searchFilteredPosts.map((post) => {
                   const mediaSrc =
                     (post.isRepost ? post.originalPostGifUrl : post.gifUrl) ||
@@ -410,136 +309,46 @@ export default function SavedTab({ searchQuery = '' }: SavedTabProps) {
                   const hasMedia = !!mediaSrc;
 
                   return (
-                    <div
+                    <SavedPostCard
                       key={post.id}
-                      style={{
-                        borderRadius: '16px',
-                        overflow: 'hidden',
-                        background: 'rgb(var(--card))',
-                        border: '1px solid rgb(var(--border))',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        boxShadow: '0 4px 10px rgba(15, 23, 42, 0.08)',
-                        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                        ...(hasMedia
-                          ? {}
-                          : {
-                              minHeight: 120,
-                            }),
-                      }}
+                      $hasMedia={hasMedia}
                       title={post.isRepost ? post.originalPostContent || '' : post.content || ''}
                     >
                       {hasMedia && (
-                        <div
-                          style={{
-                            position: 'relative',
-                            width: '100%',
-                            overflow: 'hidden',
-                            background: 'rgba(15, 23, 42, 0.8)',
-                            // square media area for Pinterest-like look
-                            paddingBottom: '100%',
-                          }}
-                        >
-                          <img
-                            src={mediaSrc}
-                            alt="Saved media"
-                            style={{
-                              position: 'absolute',
-                              inset: 0,
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
-                            }}
-                          />
-                        </div>
+                        <SavedPostMediaWrapper>
+                          <SavedPostMedia src={mediaSrc} alt="Saved media" />
+                        </SavedPostMediaWrapper>
                       )}
-                      <div
-                        style={{
-                          padding: '6px 8px',
-                          display: 'flex',
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: '6px',
-                          background: 'rgb(var(--card))',
-                          color: 'rgb(var(--foreground))',
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: 24,
-                            height: 24,
-                            borderRadius: '999px',
-                            overflow: 'hidden',
-                            background: 'rgba(255,255,255,0.12)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                          }}
-                        >
+                      <SavedPostCardFooter>
+                        <SavedPostAvatar>
                           {post.avatarUrl ? (
-                            <img
+                            <SavedPostAvatarImage
                               src={post.avatarUrl}
                               alt={post.authorUsername}
-                              style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover',
-                              }}
                             />
                           ) : (
-                            <span
-                              style={{
-                                fontSize: '0.7rem',
-                                fontWeight: 600,
-                              }}
-                            >
+                            <SavedPostAvatarLetter>
                               {(post.authorDisplayName || post.authorUsername)[0]?.toUpperCase()}
-                            </span>
+                            </SavedPostAvatarLetter>
                           )}
-                        </div>
-                        <div
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            minWidth: 0,
-                            flex: 1,
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: '0.75rem',
-                              fontWeight: 500,
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                            }}
-                          >
+                        </SavedPostAvatar>
+                        <SavedPostCardText>
+                          <SavedPostAuthorName>
                             {post.authorDisplayName || post.authorUsername}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: '0.7rem',
-                              opacity: 0.9,
-                              display: '-webkit-box',
-                              WebkitLineClamp: hasMedia ? 2 : 3,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
-                            }}
-                          >
+                          </SavedPostAuthorName>
+                          <SavedPostContentPreview $clampLines={hasMedia ? 2 : 3}>
                             {post.isRepost ? post.originalPostContent : post.content}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                          </SavedPostContentPreview>
+                        </SavedPostCardText>
+                      </SavedPostCardFooter>
+                    </SavedPostCard>
                   );
                 })}
-              </div>
+              </SavedPostsGrid>
             )}
           </FeedSection>
-        </FeedContainer>
-      </div>
+        </SavedTabFeedWrapper>
+      </SavedTabLayout>
 
       {isManagingCollection && collectionToManage && (
         <ModalOverlay
@@ -561,81 +370,32 @@ export default function SavedTab({ searchQuery = '' }: SavedTabProps) {
               </ModalCloseButton>
             </ModalHeader>
 
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.75rem',
-                marginBottom: '1.25rem',
-              }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label
-                  htmlFor="collection-name"
-                  style={{ fontSize: '0.8rem', color: 'rgb(var(--muted-foreground))' }}
-                >
-                  Collection name
-                </label>
-                <input
+            <ModalFormSection>
+              <ModalFieldGroup>
+                <ModalLabel htmlFor="collection-name">Collection name</ModalLabel>
+                <ModalInput
                   id="collection-name"
                   type="text"
                   value={renameValue}
                   onChange={(e) => setRenameValue(e.target.value)}
-                  style={{
-                    padding: '0.5rem 0.75rem',
-                    borderRadius: '999px',
-                    border: '1px solid rgb(var(--input))',
-                    background: 'rgb(var(--background))',
-                    color: 'rgb(var(--foreground))',
-                    fontSize: '0.9rem',
-                  }}
                 />
-              </div>
+              </ModalFieldGroup>
 
-              <button
-                type="button"
-                onClick={handleDeleteCollection}
-                style={{
-                  alignSelf: 'flex-start',
-                  padding: '0.5rem 0.9rem',
-                  borderRadius: '999px',
-                  border: '1px solid rgba(239, 68, 68, 0.35)',
-                  background: 'rgba(239, 68, 68, 0.06)',
-                  color: 'rgb(239, 68, 68)',
-                  fontSize: '0.85rem',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                }}
-              >
+              <DeleteCollectionButton type="button" onClick={handleDeleteCollection}>
                 Delete collection
-              </button>
-            </div>
+              </DeleteCollectionButton>
+            </ModalFormSection>
 
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: '0.75rem',
-              }}
-            >
-              <button
+            <ModalActionsRow>
+              <ModalCancelButton
                 type="button"
                 onClick={() => {
                   setIsManagingCollection(false);
                   setCollectionToManage(null);
                 }}
-                style={{
-                  padding: '0.45rem 1.1rem',
-                  borderRadius: '999px',
-                  border: '1px solid rgb(var(--border))',
-                  background: 'rgb(var(--background))',
-                  color: 'rgb(var(--foreground))',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                }}
               >
                 Cancel
-              </button>
+              </ModalCancelButton>
               <PostButton
                 type="button"
                 onClick={handleRenameCollection}
@@ -643,10 +403,10 @@ export default function SavedTab({ searchQuery = '' }: SavedTabProps) {
               >
                 Save changes
               </PostButton>
-            </div>
+            </ModalActionsRow>
           </ModalContent>
         </ModalOverlay>
       )}
-    </Container>
+    </SavedTabContainer>
   );
 }

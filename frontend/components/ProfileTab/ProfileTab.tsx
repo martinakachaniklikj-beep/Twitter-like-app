@@ -41,31 +41,28 @@ import {
   SuggestionsList,
   SuggestionItem,
 } from './ProfileTab.styles';
-import {
-  PostCard as FeedPostCard,
-  PostContent as FeedPostContent,
-  PostAvatar as FeedPostAvatar,
-  PostAvatarText as FeedPostAvatarText,
-  PostBody as FeedPostBody,
-  PostHeader as FeedPostHeader,
-  PostAuthorName as FeedPostAuthorName,
-  PostAuthorUsername as FeedPostAuthorUsername,
-  PostDivider as FeedPostDivider,
-  PostDate as FeedPostDate,
-  PostText as FeedPostText,
-  PostMediaWrapper as FeedPostMediaWrapper,
-  PostMedia as FeedPostMedia,
-} from '@/components/FeedTab/FeedTab.styles';
-import { UserProfile, Post, UpdateProfileForm, UpdateProfilePayload } from './types';
+import { PostCard } from '@/components/FeedTab/PostCard';
+import type { Post } from '@/components/FeedTab/types';
+import { UserProfile, UpdateProfileForm, UpdateProfilePayload } from './types';
 import { profileLabels } from './utils/labels';
 import { formatDate } from './utils/utils';
 import { profileServices } from './services/profileServices';
 import { uploadAvatar, uploadCover } from '@/services/storage.service';
+import { useEffect } from 'react';
+import { feedLabels } from '@/components/FeedTab/utils/labels';
+import { feedServices } from '@/components/FeedTab/services/feedServices';
+import { blockServices } from '@/services/blockServices';
 
 export default function ProfileTab() {
   const [isEditing, setIsEditing] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [commentModalPost, setCommentModalPost] = useState<Post | null>(null);
+  const [repostModalPost, setRepostModalPost] = useState<Post | null>(null);
+  const [deleteConfirmPost, setDeleteConfirmPost] = useState<Post | null>(null);
+  const [blockConfirmUser, setBlockConfirmUser] = useState<{ id: string; username: string } | null>(null);
+  const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
+  const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -88,6 +85,118 @@ export default function ProfileTab() {
     },
     enabled: !!profile?.username && !!user,
   });
+
+  const invalidateUserPosts = () => {
+    queryClient.invalidateQueries({ queryKey: ['userPosts', profile?.username] });
+    queryClient.invalidateQueries({ queryKey: ['feed'] });
+  };
+
+  const likeMutation = useMutation({
+    mutationFn: async ({ postId, isLiked }: { postId: string; isLiked: boolean }) => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+      return isLiked
+        ? feedServices.unlikePost(token, postId)
+        : feedServices.likePost(token, postId);
+    },
+    onSettled: invalidateUserPosts,
+  });
+
+  const repostMutation = useMutation({
+    mutationFn: async ({
+      postId,
+      isReposted,
+      content,
+      imageUrl,
+      gifUrl,
+    }: {
+      postId: string;
+      isReposted: boolean;
+      content?: string;
+      imageUrl?: string;
+      gifUrl?: string;
+    }) => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+      return isReposted
+        ? feedServices.unrepostPost(token, postId)
+        : feedServices.repostPost(token, postId, content, imageUrl, gifUrl);
+    },
+    onSettled: invalidateUserPosts,
+  });
+
+  const pollVoteMutation = useMutation({
+    mutationFn: async ({ postId, optionId }: { postId: string; optionId: string }) => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+      return feedServices.voteOnPoll(token, postId, optionId);
+    },
+    onSettled: invalidateUserPosts,
+  });
+
+  const deletePostMutation = useMutation({
+    mutationFn: async ({ postId }: { postId: string }) => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+      return feedServices.deletePost(token, postId);
+    },
+    onSettled: () => {
+      setDeleteConfirmPost(null);
+      invalidateUserPosts();
+    },
+  });
+
+  const blockUserMutation = useMutation({
+    mutationFn: async ({ userId }: { userId: string }) => {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+      await blockServices.blockUser(token, userId);
+    },
+    onSuccess: (_, variables) => {
+      setBlockedUserIds((prev) => new Set(prev).add(variables.userId));
+      invalidateUserPosts();
+    },
+  });
+
+  const handleToggleSave = async (post: Post) => {
+    if (!user) return;
+    try {
+      const token = await user.getIdToken();
+      const result = await feedServices.toggleSavedPost(token, post.id);
+      if (result.saved) {
+        setSavedPostIds((prev) => new Set(prev).add(post.id));
+      } else {
+        setSavedPostIds((prev) => {
+          const next = new Set(prev);
+          next.delete(post.id);
+          return next;
+        });
+      }
+      invalidateUserPosts();
+    } catch (e) {
+      console.error('Failed to toggle save', e);
+    }
+  };
+
+  useEffect(() => {
+    const loadSavedAndBlocked = async () => {
+      if (!user) {
+        setSavedPostIds(new Set());
+        setBlockedUserIds(new Set());
+        return;
+      }
+      try {
+        const token = await user.getIdToken();
+        const saved = await feedServices.fetchSavedPosts(token);
+        setSavedPostIds(new Set((saved as { id: string }[]).map((p) => p.id)));
+        const blocked = await blockServices.fetchBlockedUsers(token);
+        setBlockedUserIds(new Set(blocked.map((b) => b.id)));
+      } catch (e) {
+        console.error('Failed to load saved/blocked', e);
+      }
+    };
+    void loadSavedAndBlocked();
+  }, [user]);
 
   const {
     register,
@@ -156,6 +265,14 @@ export default function ProfileTab() {
     }
   };
 
+  const avatarInitial = (
+    profile?.displayName?.[0] ||
+    user?.displayName?.[0] ||
+    profile?.username?.[0] ||
+    user?.email?.[0] ||
+    '?'
+  ).toUpperCase();
+
   if (profileLoading) {
     return (
       <LoadingCard>
@@ -195,7 +312,7 @@ export default function ProfileTab() {
                     }}
                   />
                 ) : (
-                  <AvatarText>{user?.displayName?.[0]?.toUpperCase()}</AvatarText>
+                  <AvatarText>{avatarInitial}</AvatarText>
                 )}
               </Avatar>
 
@@ -367,48 +484,151 @@ export default function ProfileTab() {
           </EmptyCard>
         ) : (
           posts.map((post) => (
-            <FeedPostCard key={post.id}>
-              <FeedPostContent>
-                <FeedPostAvatar>
-                  {avatarPreview || profile?.avatarUrl ? (
-                    <img
-                      src={avatarPreview || profile?.avatarUrl || ''}
-                      alt="Avatar"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                      }}
-                    />
-                  ) : (
-                    <FeedPostAvatarText>{user?.displayName?.[0]?.toUpperCase()}</FeedPostAvatarText>
-                  )}
-                </FeedPostAvatar>
-
-                <FeedPostBody>
-                  <FeedPostHeader>
-                    <FeedPostAuthorName>
-                      {profile?.displayName || user?.displayName}
-                    </FeedPostAuthorName>
-                    <FeedPostAuthorUsername>@{profile?.username}</FeedPostAuthorUsername>
-                    <FeedPostDivider>·</FeedPostDivider>
-                    <FeedPostDate>{formatDate(post.createdAt)}</FeedPostDate>
-                  </FeedPostHeader>
-
-                  {post.content && <FeedPostText>{post.content}</FeedPostText>}
-
-                  {post.imageUrl && (
-                    <FeedPostMediaWrapper>
-                      <FeedPostMedia src={post.imageUrl} alt="Post image" />
-                    </FeedPostMediaWrapper>
-                  )}
-                </FeedPostBody>
-              </FeedPostContent>
-            </FeedPostCard>
+            <PostCard
+              key={post.id}
+              post={post}
+              formatDate={formatDate}
+              youRepostedLabel={feedLabels.youReposted}
+              repostedLabel={feedLabels.reposted}
+              currentUserId={user?.uid}
+              isSaved={!!user && savedPostIds.has(post.id)}
+              isBlocked={!!post.authorId && blockedUserIds.has(post.authorId)}
+              onComment={setCommentModalPost}
+              onRepost={(p) => setRepostModalPost(p)}
+              onDelete={setDeleteConfirmPost}
+              onToggleSave={handleToggleSave}
+              onBlockUser={(id, username) => setBlockConfirmUser({ id, username })}
+              likeMutation={likeMutation}
+              repostMutation={repostMutation}
+              pollVoteMutation={pollVoteMutation}
+              deletePostMutation={deletePostMutation}
+              showSaveButton
+              showBlockButton
+            />
           ))
         )}
       </PostsSection>
+
+      {deleteConfirmPost && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1300,
+          }}
+          onClick={() => setDeleteConfirmPost(null)}
+        >
+          <div
+            style={{
+              background: 'rgb(var(--background))',
+              padding: '1.5rem',
+              borderRadius: '1rem',
+              maxWidth: '400px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p style={{ marginBottom: '1rem', fontWeight: 600 }}>Delete this post?</p>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmPost(null)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '9999px',
+                  border: '1px solid rgb(var(--border))',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => deletePostMutation.mutate({ postId: deleteConfirmPost.id })}
+                disabled={deletePostMutation.isPending}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '9999px',
+                  border: 'none',
+                  background: 'rgb(239, 68, 68)',
+                  color: 'white',
+                  cursor: 'pointer',
+                }}
+              >
+                {deletePostMutation.isPending ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {blockConfirmUser && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1300,
+          }}
+          onClick={() => setBlockConfirmUser(null)}
+        >
+          <div
+            style={{
+              background: 'rgb(var(--background))',
+              padding: '1.5rem',
+              borderRadius: '1rem',
+              maxWidth: '400px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p style={{ marginBottom: '1rem', fontWeight: 600 }}>
+              Block @{blockConfirmUser.username}? You won&apos;t see their posts.
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setBlockConfirmUser(null)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '9999px',
+                  border: '1px solid rgb(var(--border))',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  blockUserMutation.mutate({ userId: blockConfirmUser.id });
+                  setBlockConfirmUser(null);
+                }}
+                disabled={blockUserMutation.isPending}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '9999px',
+                  border: 'none',
+                  background: 'rgb(var(--destructive))',
+                  color: 'white',
+                  cursor: 'pointer',
+                }}
+              >
+                Block
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Container>
   );
 }

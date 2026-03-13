@@ -307,7 +307,7 @@ export class PostService {
     };
   }
 
-  async findByUser(username: string) {
+  async findByUser(username: string, currentUserId?: string) {
     const posts = await (this.prisma as any).post.findMany({
       where: { user: { username } },
       orderBy: { createdAt: 'desc' },
@@ -347,7 +347,7 @@ export class PostService {
       },
     });
 
-    return posts.map((post) => this.formatPost(post));
+    return posts.map((post) => this.formatPost(post, currentUserId));
   }
 
   async findOne(id: string) {

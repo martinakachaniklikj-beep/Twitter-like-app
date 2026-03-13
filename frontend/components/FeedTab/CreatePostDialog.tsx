@@ -6,7 +6,6 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Image as ImageIcon, BarChart2, X, Smile } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useComposer } from '@/contexts/ComposerContext';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import EmojiPicker from 'emoji-picker-react';
 import { feedServices } from './services/feedServices';
@@ -43,8 +42,9 @@ type CreatePostFormValues = {
 export function CreatePostDialog({ open, onClose, initialContent }: CreatePostDialogProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { state, dispatch } = useComposer();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [dialogImageUrl, setDialogImageUrl] = useState<string | undefined>(undefined);
+  const [dialogGifUrl, setDialogGifUrl] = useState<string | undefined>(undefined);
   const [isPollEnabled, setIsPollEnabled] = useState(false);
   const [isGifPickerOpen, setIsGifPickerOpen] = useState(false);
   const [gifSearchTerm, setGifSearchTerm] = useState('');
@@ -77,6 +77,13 @@ export function CreatePostDialog({ open, onClose, initialContent }: CreatePostDi
       setValue('content', initialContent);
     }
   }, [initialContent, setValue]);
+
+  useEffect(() => {
+    if (!open) {
+      setDialogImageUrl(undefined);
+      setDialogGifUrl(undefined);
+    }
+  }, [open]);
 
   const createPostMutation = useMutation({
     mutationFn: async (data: CreatePostFormValues) => {
@@ -115,16 +122,16 @@ export function CreatePostDialog({ open, onClose, initialContent }: CreatePostDi
       return feedServices.createPost(
         token,
         data.content,
-        state.imageUrl || undefined,
-        state.gifUrl || undefined,
+        dialogImageUrl || undefined,
+        dialogGifUrl || undefined,
         pollPayload,
       );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       reset({ content: '' });
-      dispatch({ type: 'SET_IMAGE_URL', imageUrl: undefined });
-      dispatch({ type: 'SET_GIF_URL', gifUrl: undefined });
+      setDialogImageUrl(undefined);
+      setDialogGifUrl(undefined);
       setIsPollEnabled(false);
       onClose();
     },
@@ -137,7 +144,7 @@ export function CreatePostDialog({ open, onClose, initialContent }: CreatePostDi
         data.pollOption2?.trim() ||
         data.pollOption3?.trim() ||
         data.pollOption4?.trim());
-    const hasContent = data.content.trim() || state.imageUrl || state.gifUrl || hasPoll;
+    const hasContent = data.content.trim() || dialogImageUrl || dialogGifUrl || hasPoll;
     if (!hasContent) return;
     createPostMutation.mutate(data);
   };
@@ -147,7 +154,7 @@ export function CreatePostDialog({ open, onClose, initialContent }: CreatePostDi
     if (file) {
       try {
         const dataUrl = await readFileAsDataURL(file);
-        dispatch({ type: 'SET_IMAGE_URL', imageUrl: dataUrl });
+        setDialogImageUrl(dataUrl);
       } catch (error) {
         // Fallback message
         alert(feedLabels.selectImageFile);
@@ -325,10 +332,10 @@ export function CreatePostDialog({ open, onClose, initialContent }: CreatePostDi
             </div>
           )}
 
-          {state.imageUrl && (
+          {dialogImageUrl && (
             <div style={{ position: 'relative', margin: '10px 0' }}>
               <img
-                src={state.imageUrl}
+                src={dialogImageUrl}
                 alt="Preview"
                 style={{
                   maxWidth: '100%',
@@ -339,7 +346,7 @@ export function CreatePostDialog({ open, onClose, initialContent }: CreatePostDi
               />
               <button
                 type="button"
-                onClick={() => dispatch({ type: 'SET_IMAGE_URL', imageUrl: undefined })}
+                onClick={() => setDialogImageUrl(undefined)}
                 style={{
                   position: 'absolute',
                   top: '8px',
@@ -361,10 +368,10 @@ export function CreatePostDialog({ open, onClose, initialContent }: CreatePostDi
             </div>
           )}
 
-          {state.gifUrl && (
+          {dialogGifUrl && (
             <div style={{ position: 'relative', margin: '10px 0' }}>
               <img
-                src={state.gifUrl}
+                src={dialogGifUrl}
                 alt="Selected GIF"
                 style={{
                   maxWidth: '100%',
@@ -375,7 +382,7 @@ export function CreatePostDialog({ open, onClose, initialContent }: CreatePostDi
               />
               <button
                 type="button"
-                onClick={() => dispatch({ type: 'SET_GIF_URL', gifUrl: undefined })}
+                onClick={() => setDialogGifUrl(undefined)}
                 style={{
                   position: 'absolute',
                   top: '8px',
@@ -424,10 +431,11 @@ export function CreatePostDialog({ open, onClose, initialContent }: CreatePostDi
               >
                 <ImageIcon size={20} />
               </button>
-              <Popover>
+              <Popover key="create-post-dialog-emoji">
                 <PopoverTrigger asChild>
                   <button
                     type="button"
+                    aria-describedby="create-post-dialog-emoji-content"
                     style={{
                       background: 'transparent',
                       border: 'none',
@@ -444,7 +452,10 @@ export function CreatePostDialog({ open, onClose, initialContent }: CreatePostDi
                     <Smile size={20} />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 border border-border bg-white shadow-xl rounded-2xl">
+                <PopoverContent
+                  id="create-post-dialog-emoji-content"
+                  className="!z-[1500] w-auto p-0 border border-border bg-white shadow-xl rounded-2xl"
+                >
                   <EmojiPicker
                     onEmojiClick={(emoji) => {
                       const current = getValues('content') || '';
@@ -473,35 +484,6 @@ export function CreatePostDialog({ open, onClose, initialContent }: CreatePostDi
               >
                 GIF
               </button>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: '8px',
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'var(--primary-color, #1d9bf0)',
-                    }}
-                    title="Add emoji"
-                  >
-                    <Smile size={20} />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 border border-border bg-white shadow-xl rounded-2xl">
-                  <EmojiPicker
-                    onEmojiClick={(emoji) => {
-                      const current = getValues('content') || '';
-                      setValue('content', `${current}${emoji.emoji}`);
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
               <button
                 type="button"
                 onClick={() => setIsPollEnabled((prev) => !prev)}

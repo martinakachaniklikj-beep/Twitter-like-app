@@ -82,8 +82,8 @@ export class PostController {
   }
 
   @Get('user/:username')
-  findByUser(@Param('username') username: string) {
-    return this.postService.findByUser(username);
+  findByUser(@Req() req: AuthRequest, @Param('username') username: string) {
+    return this.postService.findByUser(username, req.user?.uid);
   }
 
   @Get(':id')

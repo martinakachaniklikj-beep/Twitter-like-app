@@ -18,6 +18,7 @@ export const ProfileCard = styled.div`
 
 export const CoverImage = styled.div`
   height: 8rem;
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
   background: linear-gradient(to right, rgba(var(--primary), 0.2), rgba(var(--primary), 0.4));
 `;
 
@@ -42,8 +43,8 @@ export const Avatar = styled.div`
   margin-top: -3.5rem;
   margin-bottom: 0.75rem;
   border-radius: 9999px;
-  background: rgb(var(--card));
-  border: 4px solid rgb(var(--card));
+  background: white;
+  border: 2px solid gray;
   display: flex;
   align-items: center;
   justify-content: center;
