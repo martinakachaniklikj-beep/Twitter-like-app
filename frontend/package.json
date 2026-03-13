@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint . --fix"
+    "lint": "eslint . --fix",
+    "postinstall": "node -e \"const fs=require('fs');const path=require('path');const typesDir=path.join(__dirname,'node_modules/@types');const rootTypes=path.join(__dirname,'../node_modules/@types');['json5','statuses','validate-npm-package-name'].forEach(p=>{const linkPath=path.join(typesDir,p);if(!fs.existsSync(linkPath)&&fs.existsSync(path.join(rootTypes,p))){fs.symlinkSync(path.relative(path.dirname(linkPath),path.join(rootTypes,p)),linkPath);}});\""
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.16",
